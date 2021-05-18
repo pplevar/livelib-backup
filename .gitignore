@@ -1,5 +1,5 @@
 /.idea
 /cache
 
-read.html
-out.csv
+*.html
+*.csv

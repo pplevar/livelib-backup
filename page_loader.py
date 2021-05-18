@@ -41,7 +41,6 @@ class PageLoader:
         for book in books:
             print('%s/%s' % (count, total))
             count += 1
-            if self.try_download_book_page(book):
+            if self.try_download_book_page(book) and count != total:
                 delay = random.randint(self.min_delay, self.max_delay)
                 wait_for_delay(delay)
-            print()

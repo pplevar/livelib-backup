@@ -23,7 +23,7 @@ def try_get_link(link):
     return None
 
 
-def parse_book(row, last_date):
+def parse_book(row, last_date, status):
     link = None
     rating = None
 
@@ -38,16 +38,16 @@ def parse_book(row, last_date):
             for href in hrefs:
                 link = try_get_link(hrefs[0].get('href'))
 
-    if link is not None and rating is not None:
-        return Book(link, rating, last_date)
-    if link is not None:
+    if link is not None and (rating is not None or status == 'wish'):
+        return Book(link, rating, last_date, status)
+    if link is not None and status != 'wish':
         print('Parsing error (rating not parsed):')
         print(etree.tostring(row))
-        print('')
+        print()
     if rating is not None:
         print('Parsing error (link not parsed):')
         print(etree.tostring(row))
-        print('')
+        print()
     return None
 
 
@@ -95,17 +95,25 @@ class ReadParser:
             self.content = None
             return False
 
-    def parse_books(self):
+    def parse_books(self, status):
         books = []
         books_html = html.fromstring(self.content)
         rows = books_html.xpath('//tr')
         last_date = None
+
+        i = 0                                                   # tmp
+
         for row in rows:
-            result = parse_book(row, last_date)
+            result = parse_book(row, last_date, status)
             if result is not None:
                 books.append(result)
             else:
                 date = try_parse_date(row)
                 if date is not None:
                     last_date = date
+
+            if i == 15:                                         # tmp
+                break                                           # tmp
+            i += 1                                              # tmp
+
         return books
