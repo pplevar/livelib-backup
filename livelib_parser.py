@@ -35,7 +35,7 @@ def parse_book(row, last_date, status):
                 rating = get_rating_from_class(rating_class)
         if link is None:
             hrefs = cell.xpath('.//a')
-            for href in hrefs:
+            if len(hrefs):
                 link = try_get_link(hrefs[0].get('href'))
 
     if link is not None and (rating is not None or status == 'wish'):
@@ -83,8 +83,8 @@ def try_parse_date(row):
     return None
 
 
-# ReadParser - parse read list in html format
-class ReadParser:
+# Parser - parse some list in html format
+class Parser:
     def load_from_file(self, file_name):
         try:
             with open(file_name, 'r', encoding="utf-8") as file:

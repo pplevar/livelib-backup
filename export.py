@@ -1,7 +1,7 @@
 # Taken mostly from https://github.com/KonH/LivelibExport
 
 from book import Book
-from read_parser import ReadParser
+from livelib_parser import Parser
 from csv_writer import CsvWriter
 from details_parser import DetailsParser
 from cache_manager import CacheManager
@@ -16,7 +16,7 @@ max_delay = 120
 
 for input_file_name, status in input_file_names:
     print('Load books from file: "%s"' % input_file_name)
-    read_parser = ReadParser()
+    read_parser = Parser()
     if read_parser.load_from_file(input_file_name) is False:
         exit(1)
     print('Books loaded.\n')
