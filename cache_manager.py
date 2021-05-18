@@ -4,7 +4,7 @@ import os
 from os import path
 
 
-# Operates with book pages cache
+# Operates with book pages cache_books
 class CacheManager:
     def __init__(self, cache_dir):
         self.cache_dir = cache_dir
@@ -23,7 +23,7 @@ class CacheManager:
     def save(self, id, content):
         file_name = self.get_path(id)
         with open(file_name, 'wb') as file:
-            print('Save to cache: "%s"' % file_name)
+            print('Save to cache_books: "%s"' % file_name)
             file.write(content)
 
     def load(self, id):

@@ -18,7 +18,7 @@ def wait_for_delay(delay):
     time.sleep(delay)
 
 
-# Page loader to download book pages to cache
+# Page loader to download book pages to cache_books
 class PageLoader:
     def __init__(self, cache, min_delay, max_delay):
         self.cache = cache
@@ -28,7 +28,7 @@ class PageLoader:
     def try_download_book_page(self, book):
         print('Downloading book with id = "%s" from "%s"' % (book.id, book.full_link))
         if self.cache.is_cached(book.id):
-            print('Already in cache, skipping.')
+            print('Already in cache_books, skipping.')
             return False
         else:
             page = download_book_page(book.full_link)

@@ -5,6 +5,7 @@ from collections import defaultdict
 from lxml import html
 from lxml import etree
 from book import Book
+from quote import Quote
 
 
 def get_rating_from_class(rating_class):
@@ -17,7 +18,7 @@ def get_rating_from_class(rating_class):
         return None
 
 
-def try_get_link(link):
+def try_get_book_link(link):
     if "/book/" in link:
         return link
     return None
@@ -36,16 +37,48 @@ def parse_book(row, last_date, status):
         if link is None:
             hrefs = cell.xpath('.//a')
             if len(hrefs):
-                link = try_get_link(hrefs[0].get('href'))
+                link = try_get_book_link(hrefs[0].get('href'))
 
-    if link is not None and (rating is not None or status == 'wish'):
+    if link is not None and (rating is not None or status != 'read'):
         return Book(link, rating, last_date, status)
-    if link is not None and status != 'wish':
+    if link is not None and status == 'read':
         print('Parsing error (rating not parsed):')
         print(etree.tostring(row))
         print()
     if rating is not None:
         print('Parsing error (link not parsed):')
+        print(etree.tostring(row))
+        print()
+    return None
+
+
+def try_get_quote_link(link):
+    if "/quote/" in link:
+        return link
+    return None
+
+
+def parse_quote(row):
+    cards = row.xpath('.//div[@class="lenta-card"]')
+    card = cards[0] if len(cards) else None
+    hrefs = card.xpath('.//a')
+    link = None
+    link_book = None
+    for href in hrefs:
+        if link is None:
+            link = try_get_quote_link(href.get('href'))
+        if link_book is None:
+            link_book = try_get_book_link(href.get('href'))
+    texts = card.xpath('.//p/text()')
+    text = texts[0] if len(texts) else None
+    if link is not None and link_book is not None and text is not None:
+        return Quote(link, text, Book(link_book))
+    if link is None or link_book is None:
+        print('Parsing error (link not parsed):')
+        print(etree.tostring(row))
+        print()
+    if text is None:
+        print('Parsing error (text not parsed):')
         print(etree.tostring(row))
         print()
     return None
@@ -85,6 +118,9 @@ def try_parse_date(row):
 
 # Parser - parse some list in html format
 class Parser:
+    def __init__(self):
+        self.content = None
+
     def load_from_file(self, file_name):
         try:
             with open(file_name, 'r', encoding="utf-8") as file:
@@ -117,3 +153,21 @@ class Parser:
             i += 1                                              # tmp
 
         return books
+
+    def parse_quotes(self):
+        quotes = []
+        quotes_html = html.fromstring(self.content)
+        rows = quotes_html.xpath('.//article')
+
+        i = 0                                                   # tmp
+
+        for row in rows:
+            result = parse_quote(row)
+            if result is not None:
+                quotes.append(result)
+
+            if i == 3:                                          # tmp
+                break                                           # tmp
+            i += 1                                              # tmp
+
+        return quotes

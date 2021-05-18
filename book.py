@@ -1,13 +1,14 @@
 # Taken mostly from https://github.com/KonH/LivelibExport
 
 class Book:
-    def __init__(self, link, rating, date, status):
+    def __init__(self, link, rating=None, date=None, status=''):
         self.link = link
         self.rating = rating
         self.id = link[link.rfind("/") + 1:]
         self.full_link = 'https://www.livelib.ru' + link
         self.date = date
         self.status = status
+        self.author = None
         self.name = None
         self.ISBN = None
 
@@ -20,3 +21,6 @@ class Book:
 
     def add_name(self, name):
         self.name = name
+
+    def add_author(self, author):
+        self.author = author
