@@ -5,7 +5,7 @@ import random
 from urllib import request
 
 
-def download_book_page(link):
+def download_page(link):
     print('Start download page from "%s"' % link)
     with request.urlopen(link) as data:
         content = data.read()
@@ -13,7 +13,8 @@ def download_book_page(link):
         return content
 
 
-def wait_for_delay(delay):
+def wait_for_delay(min_delay, max_delay):
+    delay = random.randint(min_delay, max_delay)
     print("Waiting %s sec..." % delay)
     time.sleep(delay)
 
@@ -31,7 +32,7 @@ class PageLoader:
             print('Already in cache_books, skipping.')
             return False
         else:
-            page = download_book_page(book.full_link)
+            page = download_page(book.full_link)
             self.cache.save(book.id, page)
             return True
 
@@ -42,5 +43,4 @@ class PageLoader:
             print('%s/%s' % (count, total))
             count += 1
             if self.try_download_book_page(book) and count != total:
-                delay = random.randint(self.min_delay, self.max_delay)
-                wait_for_delay(delay)
+                wait_for_delay(self.min_delay, self.max_delay)

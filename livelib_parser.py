@@ -8,6 +8,13 @@ from book import Book
 from quote import Quote
 
 
+def error_handler(where, raw):
+    print('Parsing error (%s not parsed):')
+    print(etree.tostring(raw))
+    print()
+    return None
+
+
 def get_rating_from_class(rating_class):
     try:
         if rating_class[0] == 'r':
@@ -19,7 +26,7 @@ def get_rating_from_class(rating_class):
 
 
 def try_get_book_link(link):
-    if "/book/" in link:
+    if "/book/" in link or "/work/" in link:
         return link
     return None
 
@@ -42,14 +49,9 @@ def parse_book(row, last_date, status):
     if link is not None and (rating is not None or status != 'read'):
         return Book(link, rating, last_date, status)
     if link is not None and status == 'read':
-        print('Parsing error (rating not parsed):')
-        print(etree.tostring(row))
-        print()
+        return error_handler('rating', row)
     if rating is not None:
-        print('Parsing error (link not parsed):')
-        print(etree.tostring(row))
-        print()
-    return None
+        return error_handler('link', row)
 
 
 def try_get_quote_link(link):
@@ -61,6 +63,8 @@ def try_get_quote_link(link):
 def parse_quote(row):
     cards = row.xpath('.//div[@class="lenta-card"]')
     card = cards[0] if len(cards) else None
+    if card is None:
+        return error_handler('card', row)
     hrefs = card.xpath('.//a')
     link = None
     link_book = None
@@ -74,13 +78,9 @@ def parse_quote(row):
     if link is not None and link_book is not None and text is not None:
         return Quote(link, text, Book(link_book))
     if link is None or link_book is None:
-        print('Parsing error (link not parsed):')
-        print(etree.tostring(row))
-        print()
+        return error_handler('link', row)
     if text is None:
-        print('Parsing error (text not parsed):')
-        print(etree.tostring(row))
-        print()
+        return error_handler('text', row)
     return None
 
 
