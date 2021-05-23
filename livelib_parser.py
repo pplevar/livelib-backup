@@ -9,7 +9,7 @@ from quote import Quote
 
 
 def error_handler(where, raw):
-    print('Parsing error (%s not parsed):')
+    print('Parsing error (%s not parsed):' % where)
     print(etree.tostring(raw))
     print()
     return None

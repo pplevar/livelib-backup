@@ -1,11 +1,10 @@
-# Taken mostly from https://github.com/KonH/LivelibExport
-
-def print_header():
-    return '\t'.join(vars(Book()).keys())
-
-
 def handle_none(none):
     return '' if none is None else none
+
+
+def add_livelib(link):
+    ll = 'https://www.livelib.ru'
+    return link if ll in link else ll + link
 
 
 class Book:
@@ -15,10 +14,16 @@ class Book:
         self.status = handle_none(status)
         self.rating = handle_none(rating)
         self.date = handle_none(date)
-        self.link = 'https://www.livelib.ru' + handle_none(link)
+        self.link = add_livelib(handle_none(link))
 
     def __str__(self):
         return '%s\t%s\t%s\t%s\t%s\t%s' % (self.name, self.author, self.status, self.rating, self.date, self.link)
+
+    def __eq__(self, other):
+        return self.link == other.link
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def to_list(self):
         return self.__dict__.values()

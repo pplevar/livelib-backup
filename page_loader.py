@@ -13,8 +13,8 @@ def download_page(link):
         return content
 
 
-def wait_for_delay(min_delay, max_delay):
-    delay = random.randint(min_delay, max_delay)
+def wait_for_delay(min_delay, max_delay=-1):
+    delay = random.randint(min_delay, max_delay) if max_delay >= 0 else min_delay
     print("Waiting %s sec..." % delay)
     time.sleep(delay)
 
