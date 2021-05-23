@@ -1,72 +1,63 @@
-# Taken mostly from https://github.com/KonH/LivelibExport
-
-from book import Book
-from quote import Quote
-from livelib_parser import Parser
-from csv_writer import CsvWriter
-from details_parser import DetailsParser
-from cache_manager import CacheManager
-from page_loader import PageLoader
-
-# settings
-input_file_names = [('read.html', 'read'), ('wish.html', 'wish')]
-cache_dir_name = 'cache_books'
-out_file_name = 'backup_books.csv'
-min_delay = 90
-max_delay = 120
-
-parser = Parser()
-for input_file_name, status in input_file_names:
-    print('Load books from file: "%s"' % input_file_name)
-    if parser.load_from_file(input_file_name) is False:
-        exit(1)
-    print('Books loaded.\n')
-
-    print('Parse books from summary.')
-    books = parser.parse_books(status)
-    print('Books parsed: %s.\n' % len(books))
-
-    print('Start download detailed book pages with status "%s".' % status)
-    cache = CacheManager(cache_dir_name)
-    loader = PageLoader(cache, min_delay, max_delay)
-    loader.download(books)
-    print('Detailed book pages downloaded.\n')
-
-    print('Prepare books for export.')
-    details_parser = DetailsParser(cache)
-    ready_books = details_parser.parse(books)
-    print('Books ready to export: %s.\n' % len(ready_books))
-
-    writer = CsvWriter()
-    writer.save_books(ready_books, out_file_name)
-    print('Books saved to "%s"' % out_file_name)
+from livelib_parser import get_books, get_quotes, slash_add
+from csv_reader import read_books_from_csv, read_quotes_from_csv
+from csv_writer import save_books, save_quotes
 
 
-# settings
-input_file_name = 'quotes.html'
-cache_dir_name = 'cache_quotes'
-out_file_name = 'backup_quotes.csv'
+def get_new_items(old_data, new_data):
+    items = []
+    for new in new_data:
+        if new not in old_data:
+            items.append(new)
+    return items
 
-print('Load quotes from file: "%s"' % input_file_name)
-if parser.load_from_file(input_file_name) is False:
-    exit(1)
-print('Quotes loaded.\n')
 
-print('Parse books from summary.')
-quotes = parser.parse_quotes()
-print('Quotes parsed: %s.\n' % len(quotes))
+if __name__ == "__main__":
 
-# print('Start download detailed quotes pages with status.')
-# cache = CacheManager(cache_dir_name)
-# loader = PageLoader(cache, min_delay, max_delay)
-# loader.download(quotes)
-# print('Detailed quote pages downloaded.\n')
+    ll_href = 'https://www.livelib.ru/reader'
 
-# print('Prepare quotes for export.')
-# details_parser = DetailsParser(cache)
-# ready_quotes = details_parser.parse(quotes)
-# print('Quotes ready to export: %s.\n' % len(ready_quotes))
+    user = input('Type your username: ')
+    print()
 
-writer = CsvWriter()
-writer.save_quotes(quotes, out_file_name)
-print('Quotes saved to "%s"' % out_file_name)
+    user_href = slash_add(ll_href, user)
+    book_file = 'backup_%s_book.csv' % user
+    quote_file = 'backup_%s_quote.csv' % user
+    print('Data from the page %s will be saved to files %s and %s' % (user_href, book_file, quote_file))
+    print()
+
+    books = []
+    for status in ('read', 'reading', 'wish'):
+        print('Started parsing the book pages with status "%s".' % status)
+        books = books + get_books(user_href, status)
+        print('The book pages with status "%s" were parsed.' % status)
+        print()
+
+    print('Started reading the books from %s.' % book_file)
+    books_csv = read_books_from_csv(book_file)
+    print('The books were read from %s.' % book_file)
+
+    print('Started calculating the newly added books.')
+    new_books = get_new_items(books_csv, books)
+    print('The newly added books were calculated.')
+
+    print('Started writing the newly added books to %s.' % book_file)
+    save_books(new_books, book_file)
+    print('The newly added books were written to %s.' % book_file)
+    print()
+
+    print('Started parsing the quote pages.')
+    quotes = get_quotes(user_href)
+    print('The quote pages were parsed.')
+    print()
+
+    print('Started reading the quotes from %s.' % quote_file)
+    quotes_csv = read_quotes_from_csv(quote_file)
+    print('The quotes were read from %s.' % quote_file)
+
+    print('Started calculating the newly added quotes.')
+    new_quotes = get_new_items(quotes_csv, quotes)
+    print('The newly added quotes were calculated.')
+
+    print('Started writing the newly added quotes to %s.' % book_file)
+    save_quotes(new_quotes, quote_file)
+    print('The newly added quotes were written to %s.' % book_file)
+    print()
