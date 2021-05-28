@@ -1,14 +1,19 @@
 import time
 import random
 from urllib import request
+import sys
 
 
 def download_page(link):
     print('Start downloading "%s" ...' % link, end='\t')
-    with request.urlopen(link) as data:
-        content = data.read()
-        print('Downloaded.')
-        return content
+    try:
+        with request.urlopen(link) as data:
+            content = data.read()
+            print('Downloaded.')
+            return content
+    except Exception as ex:
+        print('\nSome troubles with downloading:', ex)
+        sys.exit(1)
 
 
 def wait_for_delay(min_delay, max_delay=-1):
