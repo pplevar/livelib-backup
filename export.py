@@ -1,3 +1,4 @@
+import sys
 from livelib_parser import get_books, get_quotes, slash_add
 from csv_reader import read_books_from_csv, read_quotes_from_csv
 from csv_writer import save_books, save_quotes
@@ -12,10 +13,9 @@ def get_new_items(old_data, new_data):
 
 
 if __name__ == "__main__":
-
     ll_href = 'https://www.livelib.ru/reader'
 
-    user = input('Type your username: ')
+    user = input('Type your username: ') if len(sys.argv) == 1 else sys.argv[1]
     print()
 
     user_href = slash_add(ll_href, user)
