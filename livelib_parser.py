@@ -64,7 +64,7 @@ def date_parser(date):
 
 def handle_xpath(html_node, request, i=0):
     tmp = html_node.xpath(request)
-    return tmp[i] if len(tmp) else None
+    return tmp[i] if i < len(tmp) else None
 
 
 def book_parser(book_html, date, status):
@@ -97,6 +97,9 @@ def quote_parser(quote_html):
         if link_book is None:
             link_book = try_get_book_link(href.get('href'))
     text = handle_xpath(card, './/p/text()')
+    if len(card.xpath('.//a[@class="read-more__link"]')):
+        print('wtf')
+        text = '!!!NOT_FULL###'
     book_card = handle_xpath(card, './/div[@class="lenta-card-book__wrapper"]')
     book_name = None if book_card is None else handle_xpath(book_card, './/a[@class="lenta-card__book-title"]/text()')
     book_author = None if book_card is None else handle_xpath(book_card, './/p[@class="lenta-card__author-wrap"]/a/text()')
@@ -147,6 +150,9 @@ def get_quotes(user_href, min_delay=10, max_delay=40):
         for quote_html in page.xpath('.//article'):
             quote = quote_parser(quote_html)
             if quote is not None:
+                if quote.text == '!!!NOT_FULL###':
+                    card = handle_xpath(html.fromstring(download_page(quote.link)), './/article')
+                    quote.text = handle_xpath(card, './/p/text()')
                 quotes.append(quote)
         page_idx += 1
         wait_for_delay(min_delay, max_delay)
