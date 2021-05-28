@@ -76,7 +76,9 @@ def book_parser(book_html, date, status):
     if link is None:
         return error_handler('link', book_html)
     name = None if book_name is None else book_name.text
-    author = handle_xpath(book_data, './/a[@class="brow-book-author"]/text()')
+    author = book_data.xpath('.//a[contains(@class, "brow-book-author")]/text()')
+    if len(author):
+        author = ', '.join(author)
     rating = None
     if status == 'read':
         rating = handle_xpath(book_data, './/div[@class="brow-ratings"]/span/span/span/text()')
