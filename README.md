@@ -1,5 +1,9 @@
 # livelib-backup
 
-Необходимо скачать страницу типа https://www.livelib.ru/reader/{USER}/read/print в файл `read.html` и запустить `export.py`
+Необходимо установить зависимости:
+```
+pip3 install lxml  # for Linux
+py -m pip install lxml  # for Windows
+```
 
-Чтобы открыть страницу необходимо быть залогиненным на сайте
+После чего следует запустить скрипт `export.py`
