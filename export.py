@@ -7,7 +7,7 @@ from csv_writer import save_books, save_quotes
 def get_new_items(old_data, new_data):
     items = []
     for new in new_data:
-        if new not in old_data:
+        if new not in old_data and new not in items:
             items.append(new)
     return items
 

@@ -161,7 +161,7 @@ def get_quotes(user_href, min_delay=10, max_delay=40):
             break
         for quote_html in page.xpath('.//article'):
             quote = quote_parser(quote_html)
-            if quote is not None:
+            if quote is not None and quote not in quotes:
                 if quote.text == '!!!NOT_FULL###':
                     wait_for_delay(min_delay, max_delay)
                     try:
