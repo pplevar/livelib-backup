@@ -1,7 +1,6 @@
 import time
 import random
 from urllib import request
-import sys
 
 
 def download_page(link):
@@ -13,7 +12,7 @@ def download_page(link):
             return content
     except Exception as ex:
         print('\nSome troubles with downloading:', ex)
-        sys.exit(1)
+        raise ex
 
 
 def wait_for_delay(min_delay, max_delay=-1):

@@ -98,7 +98,6 @@ def quote_parser(quote_html):
             link_book = try_get_book_link(href.get('href'))
     text = handle_xpath(card, './/p/text()')
     if len(card.xpath('.//a[@class="read-more__link"]')):
-        print('wtf')
         text = '!!!NOT_FULL###'
     book_card = handle_xpath(card, './/div[@class="lenta-card-book__wrapper"]')
     book_name = None if book_card is None else handle_xpath(book_card, './/a[@class="lenta-card__book-title"]/text()')
@@ -120,9 +119,17 @@ def get_books(user_href, status, min_delay=10, max_delay=40):
     books = []
     href = slash_add(user_href, status)
     page_idx = 1
-    wait_for_delay(min_delay, max_delay)
-    page = html.fromstring(download_page(href_i(href, page_idx)))
-    while not is_last_page(page):
+    page = None
+    while True:
+        wait_for_delay(min_delay, max_delay)
+        try:
+            page = html.fromstring(download_page(href_i(href, page_idx)))
+        except Exception:
+            continue
+        finally:
+            page_idx += 1
+        if is_last_page(page):
+            break
         last_date = None
         for div_book_html in page.xpath('.//div[@id="booklist"]/div'):
             date = handle_xpath(div_book_html, './/h2/text()')
@@ -134,9 +141,6 @@ def get_books(user_href, status, min_delay=10, max_delay=40):
                 book = book_parser(div_book_html, last_date, status)
                 if book is not None:
                     books.append(book)
-        page_idx += 1
-        wait_for_delay(min_delay, max_delay)
-        page = html.fromstring(download_page(href_i(href, page_idx)))
     return books
 
 
@@ -144,17 +148,27 @@ def get_quotes(user_href, min_delay=10, max_delay=40):
     quotes = []
     href = slash_add(user_href, 'quotes')
     page_idx = 1
-    wait_for_delay(min_delay, max_delay)
-    page = html.fromstring(download_page(href_i(href, page_idx)))
-    while not is_last_page(page):
+    page = None
+    while True:
+        wait_for_delay(min_delay, max_delay)
+        try:
+            page = html.fromstring(download_page(href_i(href, page_idx)))
+        except Exception:
+            continue
+        finally:
+            page_idx += 1
+        if is_last_page(page):
+            break
         for quote_html in page.xpath('.//article'):
             quote = quote_parser(quote_html)
             if quote is not None:
                 if quote.text == '!!!NOT_FULL###':
-                    card = handle_xpath(html.fromstring(download_page(quote.link)), './/article')
+                    wait_for_delay(min_delay, max_delay)
+                    try:
+                        quote_page = html.fromstring(download_page(quote.link))
+                    except Exception:
+                        continue
+                    card = handle_xpath(quote_page, './/article')
                     quote.text = handle_xpath(card, './/p/text()')
                 quotes.append(quote)
-        page_idx += 1
-        wait_for_delay(min_delay, max_delay)
-        page = html.fromstring(download_page(href_i(href, page_idx)))
     return quotes
