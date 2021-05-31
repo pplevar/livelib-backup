@@ -169,6 +169,6 @@ def get_quotes(user_href, min_delay=10, max_delay=40):
                     except Exception:
                         continue
                     card = handle_xpath(quote_page, './/article')
-                    quote.text = handle_xpath(card, './/p/text()')
+                    quote.text = handle_xpath(card, './/p').text_content()
                 quotes.append(quote)
     return quotes
