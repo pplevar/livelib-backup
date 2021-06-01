@@ -115,7 +115,7 @@ def slash_add(left, right):
     return left + '/' + right
 
 
-def get_books(user_href, status, min_delay=10, max_delay=40):
+def get_books(user_href, status, min_delay=30, max_delay=60):
     books = []
     href = slash_add(user_href, status)
     page_idx = 1
@@ -144,7 +144,7 @@ def get_books(user_href, status, min_delay=10, max_delay=40):
     return books
 
 
-def get_quotes(user_href, min_delay=10, max_delay=40):
+def get_quotes(user_href, min_delay=30, max_delay=60):
     quotes = []
     href = slash_add(user_href, 'quotes')
     page_idx = 1
