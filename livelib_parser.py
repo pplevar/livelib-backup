@@ -63,6 +63,8 @@ def date_parser(date):
 
 
 def handle_xpath(html_node, request, i=0):
+    if html_node is None:
+        return None
     tmp = html_node.xpath(request)
     return tmp[i] if i < len(tmp) else None
 
@@ -89,6 +91,13 @@ def book_parser(book_html, date, status):
     return None if link is None else Book(link, status, name, author, rating, date)
 
 
+def get_quote_text(card):
+    item = handle_xpath(card, './/blockquote')
+    if item is None:
+        item = handle_xpath(card, './/p')
+    return None if item is None else format_quote_text(item.text_content())
+
+
 def quote_parser(quote_html):
     card = handle_xpath(quote_html, './/div[@class="lenta-card"]')
     if card is None:
@@ -100,7 +109,7 @@ def quote_parser(quote_html):
             link = try_get_quote_link(href.get('href'))
         if link_book is None:
             link_book = try_get_book_link(href.get('href'))
-    text = format_quote_text(handle_xpath(card, './/p/text()'))
+    text = get_quote_text(card)
     if len(card.xpath('.//a[@class="read-more__link"]')):
         text = '!!!NOT_FULL###'
     book_card = handle_xpath(card, './/div[@class="lenta-card-book__wrapper"]')
@@ -172,7 +181,6 @@ def get_quotes(user_href, min_delay=30, max_delay=60):
                         quote_page = html.fromstring(download_page(quote.link))
                     except Exception:
                         continue
-                    card = handle_xpath(quote_page, './/article')
-                    quote.text = format_quote_text(handle_xpath(card, './/p').text_content())
+                    quote.text = get_quote_text(handle_xpath(quote_page, './/article'))
                 quotes.append(quote)
     return quotes
