@@ -113,8 +113,8 @@ def quote_parser(quote_html):
     if len(card.xpath('.//a[@class="read-more__link"]')):
         text = '!!!NOT_FULL###'
     book_card = handle_xpath(card, './/div[@class="lenta-card-book__wrapper"]')
-    book_name = None if book_card is None else handle_xpath(book_card, './/a[@class="lenta-card__book-title"]/text()')
-    book_author = None if book_card is None else handle_xpath(book_card, './/p[@class="lenta-card__author-wrap"]/a/text()')
+    book_name = handle_xpath(book_card, './/a[@class="lenta-card__book-title"]/text()')
+    book_author = handle_xpath(book_card, './/p[@class="lenta-card__author-wrap"]/a/text()')
     if link is not None and link_book is not None and text is not None:
         return Quote(link, text, Book(link_book, name=book_name, author=book_author))
     if link is None or link_book is None:
