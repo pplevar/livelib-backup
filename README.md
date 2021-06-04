@@ -2,8 +2,8 @@
 
 Необходимо установить зависимости:
 ```
-pip3 install lxml  # for Linux
-py -m pip install lxml  # for Windows
+pip3 install requirements.txt  # for Linux
+py -m pip install requirements.txt  # for Windows
 ```
 
 После чего следует запустить скрипт `export.py`, где `username` - это опционный аргумент, ваше имя пользователя, которое вы берете из ссылки на ваш личный кабинет вида https://www.livelib.ru/reader/username
