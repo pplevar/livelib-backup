@@ -1,7 +1,7 @@
-import sys
 from livelib_parser import get_books, get_quotes, slash_add
 from csv_reader import read_books_from_csv, read_quotes_from_csv
 from csv_writer import save_books, save_quotes
+from arguments import get_arguments
 
 
 def get_new_items(old_data, new_data):
@@ -13,21 +13,20 @@ def get_new_items(old_data, new_data):
 
 
 if __name__ == "__main__":
+    args = get_arguments()
+
     ll_href = 'https://www.livelib.ru/reader'
 
-    user = input('Type your username: ') if len(sys.argv) == 1 else sys.argv[1]
-    print()
-
-    user_href = slash_add(ll_href, user)
-    book_file = 'backup_%s_book.csv' % user
-    quote_file = 'backup_%s_quote.csv' % user
+    user_href = slash_add(ll_href, args.user)
+    book_file = args.books_backup or 'backup_%s_book.csv' % args.user
+    quote_file = args.quotes_backup or 'backup_%s_quote.csv' % args.user
     print('Data from the page %s will be saved to files %s and %s' % (user_href, book_file, quote_file))
     print()
 
     books = []
     for status in ('read', 'reading', 'wish'):
         print('Started parsing the book pages with status "%s".' % status)
-        books = books + get_books(user_href, status)
+        books = books + get_books(user_href, status, args.min_delay, args.max_delay)
         print('The book pages with status "%s" were parsed.' % status)
         print()
 
@@ -45,7 +44,7 @@ if __name__ == "__main__":
     print()
 
     print('Started parsing the quote pages.')
-    quotes = get_quotes(user_href)
+    quotes = get_quotes(user_href, args.min_delay, args.max_delay)
     print('The quote pages were parsed.')
     print()
 
