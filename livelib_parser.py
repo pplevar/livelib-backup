@@ -8,7 +8,7 @@ from page_loader import download_page, wait_for_delay
 
 
 def error_handler(where, raw):
-    print('Parsing error (%s not parsed):' % where)
+    print('ERROR: Parsing error (%s not parsed):' % where)
     print(etree.tostring(raw))
     print()
     return None
@@ -46,6 +46,14 @@ def try_parse_month(raw_month):
 
 def is_last_page(page):
     return bool(len(page.xpath('//div[@class="with-pad"]')))
+
+
+def is_redirecting_page(page):
+    flag = bool(len(page.xpath('//div[@class="page-404"]')))
+    if flag:
+        print('ERROR: Oops! Livelib suspects that you are a bot! Reading stopped.')
+        print()
+    return flag
 
 
 def href_i(href, i):
@@ -141,7 +149,7 @@ def get_books(user_href, status, min_delay=30, max_delay=60):
             continue
         finally:
             page_idx += 1
-        if is_last_page(page):
+        if is_last_page(page) or is_redirecting_page(page):
             break
         last_date = None
         for div_book_html in page.xpath('.//div[@id="booklist"]/div'):
@@ -170,7 +178,7 @@ def get_quotes(user_href, min_delay=30, max_delay=60):
             continue
         finally:
             page_idx += 1
-        if is_last_page(page):
+        if is_last_page(page) or is_redirecting_page(page):
             break
         for quote_html in page.xpath('.//article'):
             quote = quote_parser(quote_html)
