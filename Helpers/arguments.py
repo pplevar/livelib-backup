@@ -47,6 +47,7 @@ def get_arguments():
                             help='the number of pages of quotes that the script will process')
 
     arg_parser.add_argument('-R', '--rewrite_all',
-                            action='store_true')
+                            action='store_true',
+                            help='rewrite all csv files (not update)')
 
     return arg_parser.parse_args()
