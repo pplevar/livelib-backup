@@ -10,7 +10,7 @@ from .page_loader import download_page, wait_for_delay
 def error_handler(where, raw):
     """
     Обработчик ошибки при парсинге html страницы
-    :param where: команда, которой не удалось распарсить
+    :param where: string - что не распарсилось
     :param raw: html-узел
     :return: None
     """
@@ -157,7 +157,7 @@ def book_parser(book_html, date, status):
     rating = None
     if status == 'read':
         rating = handle_xpath(book_data, './/div[@class="brow-ratings"]/span/span/span/text()')
-    return None if link is None else Book(link, status, name, author, rating, date)
+    return Book(link, status, name, author, rating, date)
 
 
 def get_quote_text(card):
