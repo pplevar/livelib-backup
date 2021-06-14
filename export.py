@@ -4,6 +4,7 @@ from Helpers.csv_writer import save_books, save_quotes
 from Helpers.arguments import get_arguments
 from urllib import request
 import math
+import os
 import sys
 
 
@@ -41,17 +42,23 @@ if __name__ == "__main__":
         print('The book pages with status "%s" were parsed.' % status)
         print()
 
-    print('Started reading the books from %s.' % book_file)
-    books_csv = read_books_from_csv(book_file)
-    print('The books were read from %s.' % book_file)
+    new_books = []
+    if args.rewrite_all:
+        new_books = books
+        os.remove(book_file)
+        print('All books were deleted %s.' % book_file)
+    else:
+        print('Started reading the books from %s.' % book_file)
+        books_csv = read_books_from_csv(book_file)
+        print('The books were read from %s.' % book_file)
 
-    print('Started calculating the newly added books.')
-    new_books = get_new_items(books_csv, books)
-    print('The newly added books were calculated.')
+        print('Started calculating the newly added books.')
+        new_books = get_new_items(books_csv, books)
+        print('The newly added books were calculated.')
 
-    print('Started writing the newly added books to %s.' % book_file)
+    print('Started writing the books to %s.' % book_file)
     save_books(new_books, book_file)
-    print('The newly added books were written to %s.' % book_file)
+    print('The books were written to %s.' % book_file)
     print()
 
     print('Started parsing the quote pages.')
@@ -59,15 +66,21 @@ if __name__ == "__main__":
     print('The quote pages were parsed.')
     print()
 
-    print('Started reading the quotes from %s.' % quote_file)
-    quotes_csv = read_quotes_from_csv(quote_file)
-    print('The quotes were read from %s.' % quote_file)
+    new_quotes = []
+    if args.rewrite_all:
+        new_quotes = quotes
+        os.remove(quote_file)
+        print('All books were deleted %s.' % quote_file)
+    else:
+        print('Started reading the quotes from %s.' % quote_file)
+        quotes_csv = read_quotes_from_csv(quote_file)
+        print('The quotes were read from %s.' % quote_file)
 
-    print('Started calculating the newly added quotes.')
-    new_quotes = get_new_items(quotes_csv, quotes)
-    print('The newly added quotes were calculated.')
+        print('Started calculating the newly added quotes.')
+        new_quotes = get_new_items(quotes_csv, quotes)
+        print('The newly added quotes were calculated.')
 
-    print('Started writing the newly added quotes to %s.' % book_file)
+    print('Started writing the quotes to %s.' % book_file)
     save_quotes(new_quotes, quote_file)
-    print('The newly added quotes were written to %s.' % book_file)
+    print('The quotes were written to %s.' % book_file)
     print()

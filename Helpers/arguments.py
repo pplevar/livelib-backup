@@ -46,4 +46,7 @@ def get_arguments():
                             default=math.inf,
                             help='the number of pages of quotes that the script will process')
 
+    arg_parser.add_argument('-R', '--rewrite_all',
+                            action='store_true')
+
     return arg_parser.parse_args()
