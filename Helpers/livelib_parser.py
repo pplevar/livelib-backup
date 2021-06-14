@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict
+import math
 from lxml import html
 from lxml import etree
 from .book import Book
@@ -217,11 +218,12 @@ def slash_add(left, right):
     return left + '/' + right
 
 
-def get_books(user_href, status, min_delay=30, max_delay=60):
+def get_books(user_href, status, page_count=math.inf, min_delay=30, max_delay=60):
     """
     Возвращает список книг (классов Book)
     :param user_href: string - ссылка на пользователя
     :param status: string - статус книг
+    :param page_count: int or float - количество страниц, которые нужно обработать (по дефолту бесконечность)
     :param min_delay: int - минимальное время задержки между запросами (по дефолту 30)
     :param max_delay: int - максимальное время задержки между запросами (по дефолту 60)
     :return: list - список классов Book
@@ -229,9 +231,8 @@ def get_books(user_href, status, min_delay=30, max_delay=60):
     books = []
     href = slash_add(user_href, status)
     page_idx = 1
-    page = None
 
-    while True:
+    while page_idx <= page_count:
         wait_for_delay(min_delay, max_delay)
 
         # если происходит какая-то ошибка с подключением, переходим к следующей странице
@@ -260,10 +261,11 @@ def get_books(user_href, status, min_delay=30, max_delay=60):
     return books
 
 
-def get_quotes(user_href, min_delay=30, max_delay=60):
+def get_quotes(user_href, page_count=math.inf, min_delay=30, max_delay=60):
     """
     Возвращает список цитат (классов Quote)
     :param user_href: string - ссылка на пользователя
+    :param page_count: int or float - количество страниц, которые нужно обработать (по дефолту бесконечность)
     :param min_delay: int - минимальное время задержки между запросами (по дефолту 30)
     :param max_delay: int - максимальное время задержки между запросами (по дефолту 60)
     :return: list - список классов Quote
@@ -271,9 +273,8 @@ def get_quotes(user_href, min_delay=30, max_delay=60):
     quotes = []
     href = slash_add(user_href, 'quotes')
     page_idx = 1
-    page = None
 
-    while True:
+    while page_idx <= page_count:
         wait_for_delay(min_delay, max_delay)
 
         # если происходит какая-то ошибка с подключением, переходим к следующей странице

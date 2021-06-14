@@ -3,6 +3,7 @@ from Helpers.csv_reader import read_books_from_csv, read_quotes_from_csv
 from Helpers.csv_writer import save_books, save_quotes
 from Helpers.arguments import get_arguments
 from urllib import request
+import math
 import sys
 
 
@@ -35,7 +36,8 @@ if __name__ == "__main__":
     books = []
     for status in ('read', 'reading', 'wish'):
         print('Started parsing the book pages with status "%s".' % status)
-        books = books + get_books(user_href, status, args.min_delay, args.max_delay)
+        read_count = args.read_count if status == 'read' else math.inf
+        books = books + get_books(user_href, status, read_count, args.min_delay, args.max_delay)
         print('The book pages with status "%s" were parsed.' % status)
         print()
 
@@ -53,7 +55,7 @@ if __name__ == "__main__":
     print()
 
     print('Started parsing the quote pages.')
-    quotes = get_quotes(user_href, args.min_delay, args.max_delay)
+    quotes = get_quotes(user_href, args.quote_count, args.min_delay, args.max_delay)
     print('The quote pages were parsed.')
     print()
 
