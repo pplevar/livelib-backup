@@ -45,7 +45,8 @@ if __name__ == "__main__":
     new_books = []
     if args.rewrite_all:
         new_books = books
-        os.remove(book_file)
+        if os.path.exists(book_file):
+            os.remove(book_file)
         print('All books were deleted %s.' % book_file)
     else:
         print('Started reading the books from %s.' % book_file)
@@ -69,7 +70,8 @@ if __name__ == "__main__":
     new_quotes = []
     if args.rewrite_all:
         new_quotes = quotes
-        os.remove(quote_file)
+        if os.path.exists(quote_file):
+            os.remove(quote_file)
         print('All books were deleted %s.' % quote_file)
     else:
         print('Started reading the quotes from %s.' % quote_file)
