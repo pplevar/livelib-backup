@@ -1,7 +1,7 @@
 import csv
 import os
-from book import Book
-from quote import Quote
+from .book import Book
+from .quote import Quote
 
 
 def read_csv(file_path):

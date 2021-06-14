@@ -1,7 +1,7 @@
-from livelib_parser import get_books, get_quotes, slash_add
-from csv_reader import read_books_from_csv, read_quotes_from_csv
-from csv_writer import save_books, save_quotes
-from arguments import get_arguments
+from Helpers.livelib_parser import get_books, get_quotes, slash_add
+from Helpers.csv_reader import read_books_from_csv, read_quotes_from_csv
+from Helpers.csv_writer import save_books, save_quotes
+from Helpers.arguments import get_arguments
 
 
 def get_new_items(old_data, new_data):

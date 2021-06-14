@@ -2,9 +2,9 @@ import re
 from collections import defaultdict
 from lxml import html
 from lxml import etree
-from book import Book
-from quote import Quote
-from page_loader import download_page, wait_for_delay
+from .book import Book
+from .quote import Quote
+from .page_loader import download_page, wait_for_delay
 
 
 def error_handler(where, raw):
