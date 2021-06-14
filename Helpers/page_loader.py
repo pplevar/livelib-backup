@@ -4,6 +4,11 @@ from urllib import request
 
 
 def download_page(link):
+    """
+    Скачивает страницу
+    :param link: string - ссылка на страницу
+    :return: string? - тело страницы
+    """
     print('Start downloading "%s" ...' % link, end='\t')
     try:
         with request.urlopen(link) as data:
@@ -16,6 +21,11 @@ def download_page(link):
 
 
 def wait_for_delay(min_delay, max_delay=-1):
+    """
+    Останавливает программу на некоторое число секунд. Нужна, чтобы сайт не распознал в нас бота
+    :param min_delay: int - минимальное число секунд
+    :param max_delay: int - максимальное число секунд
+    """
     if max_delay == -1:
         delay = min_delay
     elif max_delay < min_delay:
