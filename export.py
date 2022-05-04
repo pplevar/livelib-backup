@@ -2,7 +2,7 @@ from Helpers.livelib_parser import get_books, get_quotes, slash_add
 from Helpers.csv_reader import read_books_from_csv, read_quotes_from_csv
 from Helpers.csv_writer import save_books, save_quotes
 from Helpers.arguments import get_arguments
-from urllib import request
+import requests
 import math
 import os
 import sys
@@ -20,10 +20,10 @@ if __name__ == "__main__":
     args = get_arguments()
 
     ll_href = 'https://www.livelib.ru/reader'
-
     user_href = slash_add(ll_href, args.user)
     try:
-        request.urlopen(user_href)
+        # request.urlopen(user_href)
+        requests.get(user_href)
     except Exception as ex:
         print('\nERROR: Some troubles with downloading %s:' % user_href, ex)
         print('Double-check your username')

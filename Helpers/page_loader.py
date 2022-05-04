@@ -1,7 +1,6 @@
 import time
 import random
-from urllib import request
-
+import requests
 
 def download_page(link):
     """
@@ -11,8 +10,8 @@ def download_page(link):
     """
     print('Start downloading "%s" ...' % link, end='\t')
     try:
-        with request.urlopen(link) as data:
-            content = data.read()
+        with requests.get(link)as data:
+            content = data.content
             print('Downloaded.')
             return content
     except Exception as ex:
