@@ -3,7 +3,7 @@ import math
 import re
 
 
-def csv_file_type(arg_value, pat=re.compile(r'^.+\.csv$')):
+def table_file_type(arg_value, pat=re.compile(r'^.+\.(?:xlsx|csv)$')):
     if not pat.match(arg_value):
         raise argparse.ArgumentTypeError('Not a csv file')
     return arg_value
@@ -27,12 +27,12 @@ def get_arguments():
                             help='maximum waiting time between two page loads (default: 30 seconds)')
 
     arg_parser.add_argument('-b', '--books_backup',
-                            type=csv_file_type,
+                            type=table_file_type,
                             default=None,
                             help='path to file stores books backup')
 
     arg_parser.add_argument('-q', '--quotes_backup',
-                            type=csv_file_type,
+                            type=table_file_type,
                             default=None,
                             help='path to file stores quotes backup')
 
@@ -49,5 +49,13 @@ def get_arguments():
     arg_parser.add_argument('-R', '--rewrite_all',
                             action='store_true',
                             help='rewrite all csv files (not update)')
+
+    arg_parser.add_argument('-s', '--skip',
+                            type=str,
+                            help='skip the action (books/quotes)')
+
+    arg_parser.add_argument('-d', '--driver',
+                            type=str,
+                            help='the name of the page download driver (requests/silenium)')
 
     return arg_parser.parse_args()

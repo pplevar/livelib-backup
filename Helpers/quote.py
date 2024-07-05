@@ -3,7 +3,7 @@ from .book import Book
 
 def handle_none(none):
     """
-    Возвращет пустую строку, если объект является None, сам объект иначе
+    Возвращает пустую строку, если объект является None, сам объект иначе
     :param none: any class - какой-то объект
     :return: param class or string
     """

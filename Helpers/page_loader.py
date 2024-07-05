@@ -1,8 +1,16 @@
-import time
-import random
 import requests
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-def download_page(link):
+
+def download_page(link, driver=None) -> str or None:
+    if driver:
+        return __download_page_silenium(link, driver)
+    else:
+        return __download_page_requests(link)
+
+
+def __download_page_requests(link):
     """
     Скачивает страницу
     :param link: string - ссылка на страницу
@@ -19,17 +27,24 @@ def download_page(link):
         raise ex
 
 
-def wait_for_delay(min_delay, max_delay=-1):
+def __download_page_silenium(link, driver) -> str or None:
     """
-    Останавливает программу на некоторое число секунд. Нужна, чтобы сайт не распознал в нас бота
-    :param min_delay: int - минимальное число секунд
-    :param max_delay: int - максимальное число секунд
+    Скачивает страницу
+    :param link: string - ссылка на страницу
+    :param driver: obj - драйвер силениума
+    :return: string? - тело страницы
     """
-    if max_delay == -1:
-        delay = min_delay
-    elif max_delay < min_delay:
-        delay = max_delay
-    else:
-        delay = random.randint(min_delay, max_delay)
-    print("Waiting %s sec..." % delay)
-    time.sleep(delay)
+    from export import logger
+
+    driver.get(link)
+    try:
+        from selenium.webdriver.common.by import By
+        logger.info(f'Start downloading {link}')
+        WebDriverWait(driver, 60).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "main-body"))
+            # EC.presence_of_element_located((By.CLASS_NAME, "page-content"))
+        )
+        return driver.page_source
+    except Exception as e:
+        logger.error(f'Some error erupted during selenium processing: {e}')
+        return None
