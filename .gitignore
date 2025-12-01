@@ -1,5 +1,20 @@
 /.idea
+.serena/
 
 *.html
 *.csv
-__pycache__/*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing and coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
+# Development/generated docs
+TEST_SUITE_SUMMARY.md
+/.coveragerc

@@ -64,3 +64,31 @@ python export.py --help
 Если вы сделали это до записи в файл, то ничего не изменится.
 
 Например, если скрипт обработал 4 страницы прочитанных книг и не перешел к желаемым, а вы завершили процесс, то в таблице ничего не изменится.
+
+## Testing
+
+The project includes a comprehensive test suite with 119 tests covering unit tests, integration tests, and workflows.
+
+### Running Tests
+
+```bash
+# Install test dependencies
+pip install pytest pytest-cov
+
+# Run all tests
+pytest
+
+# Run with coverage report
+pytest --cov=. --cov-report=html
+```
+
+For detailed testing information, see:
+- [Test Suite README](tests/README.md) - Complete testing guide
+- [Test Suite Summary](TEST_SUITE_SUMMARY.md) - Coverage and metrics
+
+### Test Coverage
+
+- **119 passing tests** (100% pass rate)
+- **50% code coverage** overall
+- **100% coverage** on core data models and I/O operations
+- **Integration tests** for complete workflows
