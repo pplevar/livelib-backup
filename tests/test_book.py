@@ -2,7 +2,8 @@
 Unit tests for Book class
 """
 import pytest
-from Helpers.book import Book, handle_none, add_livelib
+from Helpers.book import Book
+from Helpers.utils import handle_none, add_livelib
 
 
 class TestHandleNone:

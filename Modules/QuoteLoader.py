@@ -115,7 +115,7 @@ class QuoteLoader:
         if self.ac.rewrite_all:
             if os.path.exists(self.ac.quote_file):
                 os.remove(self.ac.quote_file)
-            logger.info(f'All books were quotes {self.ac.quote_file}.')
+            logger.info(f'All quotes were deleted from {self.ac.quote_file}.')
 
         quotes_df = pd.DataFrame(columns=['Name', 'Author', 'Quote text', 'Book link', 'Quote link'])
         if file_ext in ['csv']:

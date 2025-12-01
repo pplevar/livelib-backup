@@ -2,8 +2,9 @@
 Unit tests for Quote class
 """
 import pytest
-from Helpers.quote import Quote, handle_none, add_livelib
+from Helpers.quote import Quote
 from Helpers.book import Book
+from Helpers.utils import handle_none, add_livelib
 
 
 class TestQuoteHelpers:
