@@ -21,11 +21,14 @@ def validate_username(username: str) -> str:
     if not username or not username.strip():
         raise ValueError("Username cannot be empty")
 
+    # Strip whitespace before validation
+    username = username.strip()
+
     # Username should be alphanumeric, dash, underscore
     if not re.match(r'^[a-zA-Z0-9_-]+$', username):
         raise ValueError(f"Invalid username format: {username}")
 
-    return username.strip()
+    return username
 
 
 def validate_file_path(filepath: str, must_exist: bool = False) -> str:
