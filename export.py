@@ -1,11 +1,11 @@
-import logging
-
 from selenium import webdriver
 
 from Helpers.livelib_parser import slash_add
 from Helpers.csv_reader import read_books_from_csv
 from Helpers.csv_writer import save_books
 from Helpers.arguments import get_arguments
+from Helpers.logger_config import get_logger, configure_logging
+from Helpers.exceptions import NetworkError, UserNotFoundError
 import requests
 import math
 import os
@@ -14,8 +14,7 @@ import sys
 from Modules.AppContext import AppContext
 from Modules.BookLoader import BookLoader
 
-logger = logging.getLogger(__name__)
-app_context = AppContext()
+logger = get_logger(__name__)
 
 
 def get_new_items(old_data, new_data):
@@ -26,24 +25,29 @@ def get_new_items(old_data, new_data):
     return items
 
 
-def configure_logging() -> None:
-    logging.basicConfig(format='%(asctime)s\t%(levelname)s\t%(name)s\t%(message)s', level=logging.INFO)
-
-
-if __name__ == "__main__":
+def main():
     args = get_arguments()
     configure_logging()
-    if args.driver == 'silenium':
+
+    # Create context locally
+    app_context = AppContext()
+
+    if args.driver == 'selenium':
         app_context.driver = webdriver.Chrome()
 
     ll_href = 'https://www.livelib.ru/reader'
     app_context.user_href = slash_add(ll_href, args.user)
 
     try:
-        requests.get(app_context.user_href)
-    except Exception as ex:
-        logger.error(f'ERROR: Some troubles with downloading {app_context.user_href}:', ex)
-        logger.error('Double-check your username')
+        response = requests.get(app_context.user_href)
+        response.raise_for_status()
+    except requests.RequestException as ex:
+        logger.error(f'Failed to access user profile: {app_context.user_href}')
+        logger.error(f'Error: {ex}')
+        logger.error('Please verify:')
+        logger.error('  1. Username is correct')
+        logger.error('  2. Internet connection is active')
+        logger.error('  3. Livelib.ru is accessible')
         sys.exit(1)
 
     app_context.book_file = args.books_backup or 'backup_%s_book.csv' % args.user
@@ -85,3 +89,7 @@ if __name__ == "__main__":
         quotes = ql.get_quotes()
         logger.info('The quote pages were parsed.')
         ql.save_quotes(quotes)
+
+
+if __name__ == "__main__":
+    main()

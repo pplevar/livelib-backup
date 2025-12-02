@@ -74,14 +74,14 @@ class TestIsLastPage:
 class TestIsRedirectingPage:
     """Tests for is_redirecting_page function"""
 
-    def test_is_redirecting_page_true(self, capsys):
+    def test_is_redirecting_page_true(self, caplog):
         """Test detecting 404 redirect page"""
         html = '<html><div class="page-404">Not found</div></html>'
         page = etree.HTML(html)
         result = is_redirecting_page(page)
         assert result is True
-        captured = capsys.readouterr()
-        assert 'bot' in captured.out.lower()
+        assert 'bot' in caplog.text.lower()
+        assert 'automation' in caplog.text.lower()
 
     def test_is_redirecting_page_false(self):
         """Test detecting normal page"""

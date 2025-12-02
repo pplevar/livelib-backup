@@ -44,7 +44,7 @@ python export.py username --skip quotes  # only process books
 python export.py username --skip books   # only process quotes
 
 # Use Selenium driver (for JavaScript-rendered content)
-python export.py username --driver silenium
+python export.py username --driver selenium
 ```
 
 ## Architecture
@@ -97,7 +97,7 @@ python export.py username --driver silenium
 
 **Dual Driver Support**: The scraper supports two modes:
 - `requests` (default): Fast, lightweight HTTP requests
-- `silenium` (Selenium): For JavaScript-rendered content, waits for DOM elements
+- `selenium`: For JavaScript-rendered content, waits for DOM elements
 
 **Incremental Backup**: By default, appends only new items to existing CSV/Excel files. Use `-R` flag to force complete rewrite.
 
@@ -119,8 +119,8 @@ Name    Author    Quote text    Book link    Quote link
 
 ## Development Notes
 
-- Typo in code: "silenium" instead of "selenium" (used consistently throughout)
 - The scraper respects bot detection by implementing random delays; adjust carefully with `--min_delay` and `--max_delay`
-- Default min/max delay values in arguments.py are swapped (min=60, max=30) - this is a bug but not critical since the code handles this in `wait_for_delay()`
 - XPath parsing expects specific Livelib HTML structure; site changes may break scraping
 - Pandas DataFrames used for quote management; CSV for books uses custom writer
+- Custom exception hierarchy (`Helpers/exceptions.py`) for better error handling
+- Logging is centralized through `Helpers/logger_config.py`
