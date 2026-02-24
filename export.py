@@ -1,24 +1,49 @@
+#!/usr/bin/env python3
+"""
+LiveLib Backup - Export user books and quotes from LiveLib.ru
+
+Saves book lists (read, reading, wish) and quotes to CSV files.
+No authorization required.
+
+Usage:
+    python export.py username [--books_backup FILE] [--quotes_backup FILE]
+    python export.py --help
+"""
 import logging
+import sys
+import math
+from typing import List
 
-from selenium import webdriver
-
-from Helpers.livelib_parser import slash_add
+from Helpers.config import BackupConfig
 from Helpers.csv_reader import read_books_from_csv
 from Helpers.csv_writer import save_books
 from Helpers.arguments import get_arguments
-import requests
-import math
-import os
-import sys
-
-from Modules.AppContext import AppContext
 from Modules.BookLoader import BookLoader
+from Modules.QuoteLoader import QuoteLoader
 
+# Configure logging
 logger = logging.getLogger(__name__)
-app_context = AppContext()
 
 
-def get_new_items(old_data, new_data):
+def configure_logging() -> None:
+    """Set up logging configuration."""
+    logging.basicConfig(
+        format='%(asctime)s\t%(levelname)s\t%(name)s\t%(message)s',
+        level=logging.INFO
+    )
+
+
+def get_new_items(old_data: List, new_data: List) -> List:
+    """
+    Find items in new_data that are not in old_data.
+    
+    Args:
+        old_data: Existing items
+        new_data: Newly fetched items
+        
+    Returns:
+        List of new items
+    """
     items = []
     for new in new_data:
         if new not in old_data and new not in items:
@@ -26,62 +51,126 @@ def get_new_items(old_data, new_data):
     return items
 
 
-def configure_logging() -> None:
-    logging.basicConfig(format='%(asctime)s\t%(levelname)s\t%(name)s\t%(message)s', level=logging.INFO)
+def main() -> int:
+    """
+    Main entry point.
+    
+    Returns:
+        Exit code (0 for success, 1 for error)
+    """
+    args = get_arguments()
+    configure_logging()
+    
+    # Create configuration from arguments
+    try:
+        config = BackupConfig(
+            username=args.user,
+            books_file=args.books_backup,
+            quotes_file=args.quotes_backup,
+            min_delay=args.min_delay,
+            max_delay=args.max_delay,
+            read_count=args.read_count,
+            quote_count=args.quote_count,
+            rewrite_all=args.rewrite_all,
+            driver_type=args.driver,
+            skip_books=args.skip == 'books',
+            skip_quotes=args.skip == 'quotes'
+        )
+    except ValueError as e:
+        logger.error('Configuration error: %s', e)
+        return 1
+    
+    logger.info('LiveLib Backup starting...')
+    logger.info('User: %s', config.username)
+    logger.info('Books file: %s', config.get_books_file_path())
+    logger.info('Quotes file: %s', config.get_quotes_file_path())
+    
+    # Initialize Selenium driver if requested
+    driver = None
+    if config.driver_type == 'selenium':
+        try:
+            from selenium import webdriver
+            driver = webdriver.Chrome()
+            logger.info('Selenium Chrome driver initialized')
+        except Exception as e:
+            logger.error('Failed to initialize Selenium driver: %s', e)
+            return 1
+    
+    try:
+        # Verify user profile exists
+        import requests
+        user_href = config.get_user_href()
+        try:
+            response = requests.get(user_href, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error('Cannot access user profile %s: %s', user_href, e)
+            logger.error('Please check your username')
+            return 1
+        
+        # Process books
+        if not config.skip_books:
+            logger.info('=== Processing Books ===')
+            book_loader = BookLoader(config, driver)
+            all_books: List = []
+            
+            for status in ('read', 'reading', 'wish'):
+                logger.info('Fetching books with status: %s', status)
+                books = book_loader.get_books(status)
+                all_books.extend(books)
+                logger.info('Found %d books with status "%s"', len(books), status)
+            
+            # Determine which books to save
+            if config.rewrite_all:
+                books_to_save = all_books
+                logger.info('Rewrite mode: all %d books will be saved', len(books_to_save))
+            else:
+                existing_books = read_books_from_csv(config.get_books_file_path())
+                books_to_save = get_new_items(existing_books, all_books)
+                logger.info(
+                    'Found %d new books (%d total, %d existing)',
+                    len(books_to_save), len(all_books), len(existing_books)
+                )
+            
+            # Save books
+            if books_to_save:
+                save_books(books_to_save, config.get_books_file_path())
+                logger.info('Saved %d books to %s', len(books_to_save), config.get_books_file_path())
+            else:
+                logger.info('No new books to save')
+        
+        # Process quotes
+        if not config.skip_quotes:
+            logger.info('=== Processing Quotes ===')
+            quote_loader = QuoteLoader(config, driver)
+            quotes = quote_loader.get_quotes()
+            logger.info('Found %d quotes', len(quotes))
+            
+            if quotes:
+                quote_loader.save_quotes(quotes)
+                logger.info('Saved %d quotes to %s', len(quotes), config.get_quotes_file_path())
+            else:
+                logger.info('No quotes to save')
+        
+        logger.info('=== Backup Complete ===')
+        return 0
+        
+    except KeyboardInterrupt:
+        logger.info('Backup interrupted by user (Ctrl+C)')
+        logger.info('No data was saved if interruption occurred before write')
+        return 130
+    except Exception as e:
+        logger.exception('Unexpected error during backup: %s', e)
+        return 1
+    finally:
+        # Clean up Selenium driver
+        if driver is not None:
+            try:
+                driver.quit()
+                logger.info('Selenium driver closed')
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":
-    args = get_arguments()
-    configure_logging()
-    if args.driver == 'silenium':
-        app_context.driver = webdriver.Chrome()
-
-    ll_href = 'https://www.livelib.ru/reader'
-    app_context.user_href = slash_add(ll_href, args.user)
-
-    try:
-        requests.get(app_context.user_href)
-    except Exception as ex:
-        logger.error(f'ERROR: Some troubles with downloading {app_context.user_href}:', ex)
-        logger.error('Double-check your username')
-        sys.exit(1)
-
-    app_context.book_file = args.books_backup or 'backup_%s_book.csv' % args.user
-    app_context.quote_file = args.quotes_backup or 'backup_%s_quote.csv' % args.user
-    logger.info(f'Data from the page {app_context.user_href} will be saved to files {app_context.book_file} and '
-                f'{app_context.quote_file}')
-    app_context.rewrite_all = args.rewrite_all
-
-    if args.skip != 'books':
-        bl = BookLoader(app_context)
-        books = []
-        for status in ('read', 'reading', 'wish'):
-            logger.info(f'Started parsing the book pages with status "{status}".')
-            app_context.read_count = args.read_count if status == 'read' else math.inf
-            books = books + bl.get_books(status)
-            logger.info(f'The book pages with status "{status}" were parsed.')
-
-        new_books = []
-        if args.rewrite_all:
-            new_books = books
-            if os.path.exists(app_context.book_file):
-                os.remove(app_context.book_file)
-            logger.info(f'All books were deleted {app_context.book_file}.')
-        else:
-            logger.info(f'Started reading the books from {app_context.book_file}.')
-            books_csv = read_books_from_csv(app_context.book_file)
-
-            logger.info(f'Started calculating the newly added books.')
-            new_books = get_new_items(books_csv, books)
-
-        save_books(new_books, app_context.book_file)
-        logger.info(f'The books were written to {app_context.book_file}.')
-
-    if args.skip != 'quotes':
-        logger.info('Started parsing the quote pages.')
-        app_context.quote_count = args.quote_count or math.inf
-        from Modules.QuoteLoader import QuoteLoader
-        ql = QuoteLoader(app_context)
-        quotes = ql.get_quotes()
-        logger.info('The quote pages were parsed.')
-        ql.save_quotes(quotes)
+    sys.exit(main())
