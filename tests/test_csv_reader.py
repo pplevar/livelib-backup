@@ -69,7 +69,7 @@ class TestConvertCsvToBooks:
 
     def test_convert_single_book(self):
         """Test converting single book"""
-        cache = [['Book Name', 'Author Name', 'read', '5', '01.01.2024', '/book/123']]
+        cache = [['Book Name', 'Author Name', 'read', '5', '01.01.2024', 'https://www.livelib.ru/book/123']]
         result = convert_csv_to_books(cache)
         assert len(result) == 1
         assert isinstance(result[0], Book)
@@ -83,9 +83,9 @@ class TestConvertCsvToBooks:
     def test_convert_multiple_books(self):
         """Test converting multiple books"""
         cache = [
-            ['Book1', 'Author1', 'read', '5', '01.01.2024', '/book/111'],
-            ['Book2', 'Author2', 'reading', '4', '15.02.2024', '/book/222'],
-            ['Book3', 'Author3', 'wish', '', '', '/work/333']
+            ['Book1', 'Author1', 'read', '5', '01.01.2024', 'https://www.livelib.ru/book/111'],
+            ['Book2', 'Author2', 'reading', '4', '15.02.2024', 'https://www.livelib.ru/book/222'],
+            ['Book3', 'Author3', 'wish', '', '', 'https://www.livelib.ru/work/333']
         ]
         result = convert_csv_to_books(cache)
         assert len(result) == 3
@@ -105,7 +105,7 @@ class TestConvertCsvToQuotes:
 
     def test_convert_single_quote(self):
         """Test converting single quote"""
-        cache = [['Book Name', 'Author', 'Quote text here', '/book/123', '/quote/456']]
+        cache = [['Book Name', 'Author', 'Quote text here', 'https://www.livelib.ru/book/123', 'https://www.livelib.ru/quote/456']]
         result = convert_csv_to_quotes(cache)
         assert len(result) == 1
         assert isinstance(result[0], Quote)
@@ -113,13 +113,14 @@ class TestConvertCsvToQuotes:
         assert result[0].book.name == 'Book Name'
         assert result[0].book.author == 'Author'
         assert '/quote/456' in result[0].link
+        assert result[0].book.status == 'read'
 
     def test_convert_multiple_quotes(self):
         """Test converting multiple quotes"""
         cache = [
-            ['Book1', 'Author1', 'Quote1', '/book/111', '/quote/1'],
-            ['Book2', 'Author2', 'Quote2', '/book/222', '/quote/2'],
-            ['Book3', 'Author3', 'Quote3', '/book/333', '/quote/3']
+            ['Book1', 'Author1', 'Quote1', 'https://www.livelib.ru/book/111', 'https://www.livelib.ru/quote/1'],
+            ['Book2', 'Author2', 'Quote2', 'https://www.livelib.ru/book/222', 'https://www.livelib.ru/quote/2'],
+            ['Book3', 'Author3', 'Quote3', 'https://www.livelib.ru/book/333', 'https://www.livelib.ru/quote/3']
         ]
         result = convert_csv_to_quotes(cache)
         assert len(result) == 3
@@ -141,7 +142,7 @@ class TestReadBooksFromCsv:
         """Test reading books from valid CSV file"""
         with open(temp_csv_file, 'w', encoding='utf-8') as f:
             f.write('Name\tAuthor\tStatus\tRating\tDate\tLink\n')
-            f.write('Test Book\tTest Author\tread\t5\t01.01.2024\t/book/123\n')
+            f.write('Test Book\tTest Author\tread\t5\t01.01.2024\thttps://www.livelib.ru/book/123\n')
         result = read_books_from_csv(temp_csv_file)
         assert len(result) == 1
         assert isinstance(result[0], Book)
@@ -151,9 +152,9 @@ class TestReadBooksFromCsv:
         """Test reading multiple books"""
         with open(temp_csv_file, 'w', encoding='utf-8') as f:
             f.write('Name\tAuthor\tStatus\tRating\tDate\tLink\n')
-            f.write('Book1\tAuthor1\tread\t5\t01.01.2024\t/book/1\n')
-            f.write('Book2\tAuthor2\treading\t4\t15.02.2024\t/book/2\n')
-            f.write('Book3\tAuthor3\twish\t\t\t/work/3\n')
+            f.write('Book1\tAuthor1\tread\t5\t01.01.2024\thttps://www.livelib.ru/book/1\n')
+            f.write('Book2\tAuthor2\treading\t4\t15.02.2024\thttps://www.livelib.ru/book/2\n')
+            f.write('Book3\tAuthor3\twish\t\t\thttps://www.livelib.ru/work/3\n')
         result = read_books_from_csv(temp_csv_file)
         assert len(result) == 3
 
@@ -170,7 +171,7 @@ class TestReadQuotesFromCsv:
         """Test reading quotes from valid CSV file"""
         with open(temp_csv_file, 'w', encoding='utf-8') as f:
             f.write('Name\tAuthor\tQuote\tBook Link\tQuote Link\n')
-            f.write('Book\tAuthor\tQuote text\t/book/123\t/quote/456\n')
+            f.write('Book\tAuthor\tQuote text\thttps://www.livelib.ru/book/123\thttps://www.livelib.ru/quote/456\n')
         result = read_quotes_from_csv(temp_csv_file)
         assert len(result) == 1
         assert isinstance(result[0], Quote)
@@ -181,7 +182,7 @@ class TestReadQuotesFromCsv:
         """Test reading multiple quotes"""
         with open(temp_csv_file, 'w', encoding='utf-8') as f:
             f.write('Name\tAuthor\tQuote\tBook Link\tQuote Link\n')
-            f.write('Book1\tAuthor1\tQuote1\t/book/1\t/quote/1\n')
-            f.write('Book2\tAuthor2\tQuote2\t/book/2\t/quote/2\n')
+            f.write('Book1\tAuthor1\tQuote1\thttps://www.livelib.ru/book/1\thttps://www.livelib.ru/quote/1\n')
+            f.write('Book2\tAuthor2\tQuote2\thttps://www.livelib.ru/book/2\thttps://www.livelib.ru/quote/2\n')
         result = read_quotes_from_csv(temp_csv_file)
         assert len(result) == 2

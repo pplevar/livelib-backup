@@ -19,8 +19,8 @@ class TestGetNewItems:
         """Test when all items in new_data are new"""
         old_data = []
         new_data = [
-            Book(link='/book/1', name='Book1'),
-            Book(link='/book/2', name='Book2')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Book1'),
+            Book(link='https://www.livelib.ru/book/2', status='read', name='Book2')
         ]
         result = get_new_items(old_data, new_data)
         assert len(result) == 2
@@ -29,8 +29,8 @@ class TestGetNewItems:
     def test_get_new_items_no_new(self):
         """Test when no new items exist"""
         data = [
-            Book(link='/book/1', name='Book1'),
-            Book(link='/book/2', name='Book2')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Book1'),
+            Book(link='https://www.livelib.ru/book/2', status='read', name='Book2')
         ]
         result = get_new_items(data, data)
         assert result == []
@@ -38,11 +38,11 @@ class TestGetNewItems:
     def test_get_new_items_some_new(self):
         """Test with mix of old and new items"""
         old_data = [
-            Book(link='/book/1', name='Old Book')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Old Book')
         ]
         new_data = [
-            Book(link='/book/1', name='Old Book'),
-            Book(link='/book/2', name='New Book')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Old Book'),
+            Book(link='https://www.livelib.ru/book/2', status='read', name='New Book')
         ]
         result = get_new_items(old_data, new_data)
         assert len(result) == 1
@@ -52,22 +52,22 @@ class TestGetNewItems:
         """Test that duplicates in new_data are removed"""
         old_data = []
         new_data = [
-            Book(link='/book/1', name='Book1'),
-            Book(link='/book/1', name='Book1'),
-            Book(link='/book/2', name='Book2')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Book1'),
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Book1'),
+            Book(link='https://www.livelib.ru/book/2', status='read', name='Book2')
         ]
         result = get_new_items(old_data, new_data)
         assert len(result) == 2
 
     def test_get_new_items_with_quotes(self):
         """Test get_new_items with Quote objects"""
-        book = Book(link='/book/123')
+        book = Book(link='https://www.livelib.ru/book/123', status='read')
         old_data = [
-            Quote(link='/quote/1', text='Old quote', book=book)
+            Quote(link='https://www.livelib.ru/quote/1', text='Old quote', book=book)
         ]
         new_data = [
-            Quote(link='/quote/1', text='Old quote', book=book),
-            Quote(link='/quote/2', text='New quote', book=book)
+            Quote(link='https://www.livelib.ru/quote/1', text='Old quote', book=book),
+            Quote(link='https://www.livelib.ru/quote/2', text='New quote', book=book)
         ]
         result = get_new_items(old_data, new_data)
         assert len(result) == 1
@@ -77,9 +77,9 @@ class TestGetNewItems:
         """Test that order of new items is preserved"""
         old_data = []
         new_data = [
-            Book(link='/book/3', name='Third'),
-            Book(link='/book/1', name='First'),
-            Book(link='/book/2', name='Second')
+            Book(link='https://www.livelib.ru/book/3', status='read', name='Third'),
+            Book(link='https://www.livelib.ru/book/1', status='read', name='First'),
+            Book(link='https://www.livelib.ru/book/2', status='read', name='Second')
         ]
         result = get_new_items(old_data, new_data)
         assert result[0].name == 'Third'
@@ -89,10 +89,10 @@ class TestGetNewItems:
     def test_get_new_items_equality_based_on_link(self):
         """Test that equality is based on link, not other attributes"""
         old_data = [
-            Book(link='/book/1', name='Original Name', author='Author A')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Original Name', author='Author A')
         ]
         new_data = [
-            Book(link='/book/1', name='Different Name', author='Author B')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Different Name', author='Author B')
         ]
         result = get_new_items(old_data, new_data)
         assert result == []

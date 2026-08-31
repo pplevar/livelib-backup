@@ -4,27 +4,67 @@ Tests for Helpers/page_loader.py
 from unittest.mock import Mock, patch
 
 import pytest
+import requests
 
 from Helpers.page_loader import download_page
+
+
+@pytest.fixture(autouse=True)
+def no_real_sleep():
+    with patch('time.sleep'):
+        yield
 
 
 class TestDownloadPageRequests:
     def test_uses_requests_when_no_driver(self):
         mock_response = Mock()
         mock_response.content = b'<html>ok</html>'
-        mock_response.__enter__ = Mock(return_value=mock_response)
-        mock_response.__exit__ = Mock(return_value=False)
+        mock_response.raise_for_status = Mock()
 
         with patch('Helpers.page_loader.requests.get', return_value=mock_response) as mock_get:
             result = download_page('https://example.com/page')
 
-        mock_get.assert_called_once_with('https://example.com/page')
+        mock_get.assert_called_once_with('https://example.com/page', timeout=30)
         assert result == b'<html>ok</html>'
 
-    def test_raises_on_requests_error(self):
-        with patch('Helpers.page_loader.requests.get', side_effect=Exception('network error')):
-            with pytest.raises(Exception, match='network error'):
+    def test_retries_on_timeout_then_succeeds(self):
+        mock_response = Mock()
+        mock_response.content = b'<html>ok</html>'
+        mock_response.raise_for_status = Mock()
+
+        with patch(
+            'Helpers.page_loader.requests.get',
+            side_effect=[requests.exceptions.Timeout('slow'), mock_response],
+        ) as mock_get:
+            result = download_page('https://example.com/page')
+
+        assert mock_get.call_count == 2
+        assert result == b'<html>ok</html>'
+
+    def test_raises_after_max_retries_on_timeout(self):
+        with patch(
+            'Helpers.page_loader.requests.get',
+            side_effect=requests.exceptions.Timeout('slow'),
+        ) as mock_get:
+            with pytest.raises(requests.exceptions.Timeout):
                 download_page('https://example.com/page')
+
+        assert mock_get.call_count == 4  # initial attempt + 3 retries
+
+    def test_raises_after_max_retries_on_request_exception(self):
+        with patch(
+            'Helpers.page_loader.requests.get',
+            side_effect=requests.exceptions.ConnectionError('down'),
+        ):
+            with pytest.raises(requests.exceptions.ConnectionError):
+                download_page('https://example.com/page')
+
+    def test_raises_immediately_on_unexpected_error(self):
+        with patch('Helpers.page_loader.requests.get', side_effect=ValueError('boom')) as mock_get:
+            with pytest.raises(ValueError):
+                download_page('https://example.com/page')
+
+        assert mock_get.call_count == 1
 
 
 class TestDownloadPageSelenium:

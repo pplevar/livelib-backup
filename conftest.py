@@ -3,11 +3,13 @@ Pytest configuration and shared fixtures for livelib-backup tests
 """
 import pytest
 import os
+import math
 import tempfile
 from unittest.mock import Mock
 from Modules.AppContext import AppContext
 from Helpers.book import Book
 from Helpers.quote import Quote
+from Helpers.config import BackupConfig
 
 
 @pytest.fixture
@@ -20,6 +22,18 @@ def app_context():
     context.min_delay = 0
     context.max_delay = 0
     return context
+
+
+@pytest.fixture
+def backup_config():
+    """Create a basic BackupConfig for testing BookLoader/QuoteLoader"""
+    return BackupConfig(
+        username="testuser",
+        min_delay=0.5,
+        max_delay=0.5,
+        read_count=math.inf,
+        quote_count=math.inf,
+    )
 
 
 @pytest.fixture
@@ -46,7 +60,7 @@ def temp_excel_file():
 def sample_book():
     """Create a sample Book object"""
     return Book(
-        link="/book/123456",
+        link="https://www.livelib.ru/book/123456",
         status="read",
         name="Test Book",
         author="Test Author",
@@ -60,7 +74,7 @@ def sample_books():
     """Create a list of sample Book objects"""
     return [
         Book(
-            link="/book/123456",
+            link="https://www.livelib.ru/book/123456",
             status="read",
             name="Book 1",
             author="Author 1",
@@ -68,7 +82,7 @@ def sample_books():
             date="01.01.2024"
         ),
         Book(
-            link="/book/789012",
+            link="https://www.livelib.ru/book/789012",
             status="reading",
             name="Book 2",
             author="Author 2",
@@ -76,12 +90,12 @@ def sample_books():
             date="15.02.2024"
         ),
         Book(
-            link="/work/345678",
+            link="https://www.livelib.ru/work/345678",
             status="wish",
             name="Book 3",
             author="Author 3",
-            rating="",
-            date=""
+            rating=None,
+            date=None
         )
     ]
 
@@ -90,7 +104,7 @@ def sample_books():
 def sample_quote(sample_book):
     """Create a sample Quote object"""
     return Quote(
-        link="/quote/999888",
+        link="https://www.livelib.ru/quote/999888",
         text="This is a test quote from the book.",
         book=sample_book
     )
@@ -101,17 +115,17 @@ def sample_quotes(sample_books):
     """Create a list of sample Quote objects"""
     return [
         Quote(
-            link="/quote/111111",
+            link="https://www.livelib.ru/quote/111111",
             text="First quote text",
             book=sample_books[0]
         ),
         Quote(
-            link="/quote/222222",
+            link="https://www.livelib.ru/quote/222222",
             text="Second quote text",
             book=sample_books[1]
         ),
         Quote(
-            link="/quote/333333",
+            link="https://www.livelib.ru/quote/333333",
             text="Third quote text",
             book=sample_books[2]
         )

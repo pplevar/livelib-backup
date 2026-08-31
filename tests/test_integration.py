@@ -23,8 +23,10 @@ class TestBookWorkflow:
         """Test complete workflow: scrape -> save -> read -> update"""
         # Step 1: Create initial books
         books = [
-            Book(link='/book/111', name='Book 1', author='Author 1', status='read', rating='5', date='01.01.2024'),
-            Book(link='/book/222', name='Book 2', author='Author 2', status='reading', rating='4', date='15.02.2024')
+            Book(link='https://www.livelib.ru/book/111', name='Book 1', author='Author 1',
+                 status='read', rating='5', date='01.01.2024'),
+            Book(link='https://www.livelib.ru/book/222', name='Book 2', author='Author 2',
+                 status='reading', rating='4', date='15.02.2024')
         ]
 
         # Step 2: Save to CSV
@@ -38,9 +40,9 @@ class TestBookWorkflow:
 
         # Step 4: Simulate new scrape with one new book
         new_scraped_books = [
-            Book(link='/book/111', name='Book 1', author='Author 1'),
-            Book(link='/book/222', name='Book 2', author='Author 2'),
-            Book(link='/book/333', name='Book 3', author='Author 3', status='wish')
+            Book(link='https://www.livelib.ru/book/111', status='read', name='Book 1', author='Author 1'),
+            Book(link='https://www.livelib.ru/book/222', status='reading', name='Book 2', author='Author 2'),
+            Book(link='https://www.livelib.ru/book/333', name='Book 3', author='Author 3', status='wish')
         ]
 
         # Step 5: Get only new items
@@ -58,14 +60,14 @@ class TestBookWorkflow:
     def test_incremental_backup_workflow(self, temp_csv_file):
         """Test incremental backup workflow"""
         # Initial backup
-        initial_books = [Book(link='/book/1', name='Initial Book')]
+        initial_books = [Book(link='https://www.livelib.ru/book/1', status='read', name='Initial Book')]
         save_books(initial_books, temp_csv_file)
 
         # First update
         existing = read_books_from_csv(temp_csv_file)
         new_books = [
-            Book(link='/book/1', name='Initial Book'),
-            Book(link='/book/2', name='New Book 1')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Initial Book'),
+            Book(link='https://www.livelib.ru/book/2', status='read', name='New Book 1')
         ]
         updates = get_new_items(existing, new_books)
         save_books(updates, temp_csv_file)
@@ -73,9 +75,9 @@ class TestBookWorkflow:
         # Second update
         existing = read_books_from_csv(temp_csv_file)
         new_books = [
-            Book(link='/book/1', name='Initial Book'),
-            Book(link='/book/2', name='New Book 1'),
-            Book(link='/book/3', name='New Book 2')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Initial Book'),
+            Book(link='https://www.livelib.ru/book/2', status='read', name='New Book 1'),
+            Book(link='https://www.livelib.ru/book/3', status='read', name='New Book 2')
         ]
         updates = get_new_items(existing, new_books)
         save_books(updates, temp_csv_file)
@@ -90,12 +92,12 @@ class TestQuoteWorkflow:
 
     def test_complete_quote_workflow(self, temp_csv_file):
         """Test complete workflow: scrape -> save -> read -> update"""
-        book = Book(link='/book/123', name='Test Book', author='Test Author')
+        book = Book(link='https://www.livelib.ru/book/123', status='read', name='Test Book', author='Test Author')
 
         # Initial quotes
         quotes = [
-            Quote(link='/quote/1', text='Quote 1', book=book),
-            Quote(link='/quote/2', text='Quote 2', book=book)
+            Quote(link='https://www.livelib.ru/quote/1', text='Quote 1', book=book),
+            Quote(link='https://www.livelib.ru/quote/2', text='Quote 2', book=book)
         ]
 
         # Save
@@ -108,9 +110,9 @@ class TestQuoteWorkflow:
 
         # New scrape
         new_scraped_quotes = [
-            Quote(link='/quote/1', text='Quote 1', book=book),
-            Quote(link='/quote/2', text='Quote 2', book=book),
-            Quote(link='/quote/3', text='Quote 3', book=book)
+            Quote(link='https://www.livelib.ru/quote/1', text='Quote 1', book=book),
+            Quote(link='https://www.livelib.ru/quote/2', text='Quote 2', book=book),
+            Quote(link='https://www.livelib.ru/quote/3', text='Quote 3', book=book)
         ]
 
         # Get new
@@ -138,7 +140,7 @@ class TestAppContextIntegration:
         )
 
         # Simulate workflow
-        books = [Book(link='/book/1', name='Book')]
+        books = [Book(link='https://www.livelib.ru/book/1', status='read', name='Book')]
         save_books(books, context.book_file)
 
         loaded = read_books_from_csv(context.book_file)
@@ -153,8 +155,8 @@ class TestAppContextIntegration:
             all_books = []
             for status in ('read', 'reading', 'wish'):
                 books = [
-                    Book(link=f'/book/{status}_1', name=f'{status} Book 1', status=status),
-                    Book(link=f'/book/{status}_2', name=f'{status} Book 2', status=status)
+                    Book(link=f'https://www.livelib.ru/book/{status}_1', name=f'{status} Book 1', status=status),
+                    Book(link=f'https://www.livelib.ru/book/{status}_2', name=f'{status} Book 2', status=status)
                 ]
                 all_books.extend(books)
 
@@ -187,12 +189,21 @@ class TestErrorHandling:
         # Write invalid CSV with correct number of columns but wrong data
         with open(temp_csv_file, 'w', encoding='utf-8') as f:
             f.write('Name\tAuthor\tStatus\tRating\tDate\tLink\n')
-            f.write('Book\tAuthor\tread\t5\t01.01.2024\t/book/123\n')
+            f.write('Book\tAuthor\tread\t5\t01.01.2024\thttps://www.livelib.ru/book/123\n')
 
         # Should handle valid CSV structure correctly
         books = read_books_from_csv(temp_csv_file)
         assert isinstance(books, list)
         assert len(books) == 1
+
+    def test_invalid_status_in_csv_raises(self, temp_csv_file):
+        """Test that an unrecognized status in the CSV surfaces as a validation error"""
+        with open(temp_csv_file, 'w', encoding='utf-8') as f:
+            f.write('Name\tAuthor\tStatus\tRating\tDate\tLink\n')
+            f.write('Book\tAuthor\tarchived\t5\t01.01.2024\thttps://www.livelib.ru/book/123\n')
+
+        with pytest.raises(ValueError, match='Invalid status'):
+            read_books_from_csv(temp_csv_file)
 
 
 class TestDataConsistency:
@@ -200,8 +211,8 @@ class TestDataConsistency:
 
     def test_book_equality_consistency(self):
         """Test that book equality is maintained across operations"""
-        book1 = Book(link='/book/123', name='Name A')
-        book2 = Book(link='/book/123', name='Name B')
+        book1 = Book(link='https://www.livelib.ru/book/123', status='read', name='Name A')
+        book2 = Book(link='https://www.livelib.ru/book/123', status='wish', name='Name B')
 
         assert book1 == book2
 
@@ -210,21 +221,21 @@ class TestDataConsistency:
 
     def test_quote_with_book_consistency(self):
         """Test quote-book relationship consistency"""
-        book = Book(link='/book/456', name='Book', author='Author')
-        quote = Quote(link='/quote/789', text='Text', book=book)
+        book = Book(link='https://www.livelib.ru/book/456', status='read', name='Book', author='Author')
+        quote = Quote(link='https://www.livelib.ru/quote/789', text='Text', book=book)
 
         assert quote.book.name == 'Book'
         assert quote.book.author == 'Author'
         assert quote.book == book
 
-    def test_link_normalization_consistency(self):
-        """Test that links are normalized consistently"""
-        book1 = Book(link='/book/123')
-        book2 = Book(link='https://www.livelib.ru/book/123')
+    def test_relative_link_is_rejected_consistently(self):
+        """Test that both Book and Quote reject non-absolute links the same way"""
+        with pytest.raises(ValueError, match='Invalid book link'):
+            Book(link='/book/123', status='read')
 
-        # Both should normalize to the same full URL
-        assert book1.link == book2.link
-        assert book1 == book2
+        book = Book(link='https://www.livelib.ru/book/123', status='read')
+        with pytest.raises(ValueError, match='Invalid quote link'):
+            Quote(link='/quote/123', text='Text', book=book)
 
 
 class TestRewriteMode:
@@ -234,8 +245,8 @@ class TestRewriteMode:
         """Test rewrite all mode workflow"""
         # Initial data
         initial_books = [
-            Book(link='/book/1', name='Old Book 1'),
-            Book(link='/book/2', name='Old Book 2')
+            Book(link='https://www.livelib.ru/book/1', status='read', name='Old Book 1'),
+            Book(link='https://www.livelib.ru/book/2', status='read', name='Old Book 2')
         ]
         save_books(initial_books, temp_csv_file)
 
@@ -244,8 +255,8 @@ class TestRewriteMode:
             os.remove(temp_csv_file)
 
         new_books = [
-            Book(link='/book/3', name='New Book 1'),
-            Book(link='/book/4', name='New Book 2')
+            Book(link='https://www.livelib.ru/book/3', status='read', name='New Book 1'),
+            Book(link='https://www.livelib.ru/book/4', status='read', name='New Book 2')
         ]
         save_books(new_books, temp_csv_file)
 
