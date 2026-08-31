@@ -72,7 +72,7 @@ def main() -> int:
             read_count=args.read_count,
             quote_count=args.quote_count,
             rewrite_all=args.rewrite_all,
-            driver_type=args.driver,
+            driver_type=args.driver or 'requests',
             skip_books=args.skip == 'books',
             skip_quotes=args.skip == 'quotes'
         )

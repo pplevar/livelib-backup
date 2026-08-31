@@ -33,7 +33,7 @@ def convert_csv_to_quotes(cache):
     :param cache: list - список списков из ячеек таблицы с цитатами
     :return: list - список классов Quote
     """
-    return [Quote(link, text, Book(blink, '', name, auth)) for name, auth, text, blink, link in cache]
+    return [Quote(link, text, Book(blink, 'read', name, auth)) for name, auth, text, blink, link in cache]
 
 
 def read_books_from_csv(file_name):

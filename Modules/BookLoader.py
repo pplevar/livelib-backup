@@ -60,14 +60,12 @@ class BookLoader:
                 
                 if page_content is None:
                     logger.warning('Failed to download page %d, skipping...', page_idx)
-                    page_idx += 1
                     continue
-                
+
                 page = html.fromstring(page_content)
-                
+
             except Exception as e:
                 logger.error('Error processing page %d: %s', page_idx, e)
-                page_idx += 1
                 continue
             finally:
                 page_idx += 1
