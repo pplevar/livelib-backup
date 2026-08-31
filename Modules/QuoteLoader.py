@@ -1,167 +1,293 @@
+"""
+Quote loader module with improved error handling and type safety.
+"""
+import logging
 import os
-
+from typing import List, Optional
 from lxml import html
 import pandas as pd
 
-from Helpers.book import Book
-from Helpers.livelib_parser import slash_add, href_i, is_last_page, is_redirecting_page, handle_xpath, error_handler
+from Helpers.livelib_parser import (
+    slash_add, href_i, is_last_page, is_redirecting_page,
+    handle_xpath, error_handler
+)
 from Helpers.page_loader import download_page
 from Helpers.quote import Quote
-from Modules.BookLoader import BookLoader
-from export import logger
+from Helpers.book import Book
+from Helpers.config import BackupConfig
+
+logger = logging.getLogger(__name__)
 
 
 class QuoteLoader:
-    def __init__(self, app_context):
-        self.ac = app_context
-
-    def get_quotes(self):
+    """Loads quotes from LiveLib user profile."""
+    
+    def __init__(self, config: BackupConfig, driver=None):
         """
-        Возвращает список цитат (классов Quote)
-        :return: list - список классов Quote
+        Initialize QuoteLoader.
+        
+        Args:
+            config: Backup configuration
+            driver: Optional Selenium WebDriver instance
         """
-        quotes = []
-        href = slash_add(self.ac.user_href, 'quotes')
+        self.config = config
+        self.driver = driver
+        self.user_href = config.get_user_href()
+    
+    def get_quotes(self) -> List[Quote]:
+        """
+        Fetch all quotes from user profile.
+        
+        Returns:
+            List of Quote objects
+        """
+        quotes: List[Quote] = []
+        href = slash_add(self.user_href, 'quotes')
         page_idx = 1
-
-        while page_idx <= self.ac.quote_count:
-            self.ac.wait_for_delay()
-
-            # если происходит какая-то ошибка с подключением, переходим к следующей странице
+        max_pages = self.config.quote_count if self.config.quote_count else float('inf')
+        
+        logger.info('Fetching quotes...')
+        
+        while page_idx <= max_pages:
+            self._wait_for_delay()
+            
             try:
-                page = html.fromstring(download_page(href_i(href, page_idx), self.ac.driver))
+                page_url = href_i(href, page_idx)
+                page_content = download_page(page_url, self.driver)
+                
+                if page_content is None:
+                    logger.warning('Failed to download quotes page %d, skipping...', page_idx)
+                    page_idx += 1
+                    continue
+                
+                page = html.fromstring(page_content)
+                
             except Exception as e:
-                logger.error(f'Some error was erupted: {e}')
+                logger.error('Error processing quotes page %d: %s', page_idx, e)
+                page_idx += 1
                 continue
             finally:
                 page_idx += 1
-
+            
             if is_last_page(page) or is_redirecting_page(page):
+                logger.info('Reached last page or error page at page %d', page_idx - 1)
                 break
-
-            for quote_html in page.xpath('.//article'):
-                quote = self.quote_parser(quote_html)
+            
+            quote_elements = page.xpath('.//article')
+            
+            for quote_html in quote_elements:
+                quote = self._parse_quote(quote_html)
+                
                 if quote is not None and quote not in quotes:
-                    if quote.text == '!!!NOT_FULL###':  # обрабатываем случай, когда показан не весь текст цитаты
-                        self.ac.wait_for_delay()
-                        try:  # просматриваем страницу цитаты, в случае ошибки переходим к следующей цитате
-                            quote_page = html.fromstring(download_page(quote.link, self.ac.driver))
+                    # Handle truncated quotes
+                    if quote.text == '!!!NOT_FULL###':
+                        logger.info('Quote truncated, fetching full text...')
+                        self._wait_for_delay()
+                        
+                        try:
+                            quote_page_content = download_page(quote.link, self.driver)
+                            if quote_page_content:
+                                quote_page = html.fromstring(quote_page_content)
+                                full_text = self._extract_quote_text(handle_xpath(quote_page, './/article'))
+                                if full_text:
+                                    quote.text = full_text
                         except Exception as e:
-                            logger.error(f'Some error was erupted: {e}')
+                            logger.error('Error fetching full quote text: %s', e)
                             continue
-                        quote.text = self.get_quote_text(handle_xpath(quote_page, './/article'))
+                    
                     quotes.append(quote)
-
+        
+        logger.info('Found %d quotes', len(quotes))
         return quotes
-
-    def quote_parser(self, quote_html):
+    
+    def _parse_quote(self, quote_html: html.HtmlElement) -> Optional[Quote]:
         """
-        Парсит html-узел с цитатой
-        :param quote_html: html-узел с цитатой
-        :return: Quote or None
+        Parse a single quote from HTML element.
+        
+        Args:
+            quote_html: HTML element containing quote data
+            
+        Returns:
+            Quote object or None if parsing fails
         """
         card = handle_xpath(quote_html, './/div[@class="lenta-card"]')
         if card is None:
             return error_handler('card', quote_html)
-
-        # Просматриваем все ссылки пока не найдем те, что нам подойдут
-        link = None
-        link_book = None
-        for href in card.xpath('.//a'):
-            if link is None:
-                link = self.try_get_quote_link(href.get('href'))
-            if link_book is None:
-                link_book = BookLoader.try_get_book_link(href.get('href'))
-
-        text = self.get_quote_text(card)
-        # Если мы нашли "Читать дальше...", нужно дать об этом знать и обработать во внешней функции
-        if len(card.xpath('.//a[@class="read-more__link"]')):
+        
+        # Extract links
+        quote_link: Optional[str] = None
+        book_link: Optional[str] = None
+        
+        for href_element in card.xpath('.//a'):
+            href = href_element.get('href')
+            if quote_link is None:
+                quote_link = self._validate_quote_link(href)
+            if book_link is None:
+                book_link = BookLoader._validate_book_link(href)
+        
+        # Extract text
+        text = self._extract_quote_text(card)
+        
+        # Check if quote is truncated
+        if card.xpath('.//a[@class="read-more__link"]'):
             text = '!!!NOT_FULL###'
-
+        
+        # Extract book info
         book_card = handle_xpath(card, './/div[@class="lenta-card-book__wrapper"]')
         book_name = handle_xpath(book_card, './/a[@class="lenta-card__book-title"]/text()')
         book_author = handle_xpath(book_card, './/p[@class="lenta-card__author-wrap"]/a/text()')
-
-        if link is not None and link_book is not None and text is not None:
-            return Quote(link, text, Book(link_book, name=book_name, author=book_author))
-        if link is None or link_book is None:
+        
+        # Validate and create Quote
+        if quote_link is None or book_link is None:
             return error_handler('link', quote_html)
+        
         if text is None:
             return error_handler('text', quote_html)
+        
+        try:
+            book = Book(link=book_link, status='read', name=book_name, author=book_author)
+            return Quote(link=quote_link, text=text, book=book)
+        except ValueError as e:
+            logger.error('Invalid quote data: %s', e)
+            return None
+    
+    def _extract_quote_text(self, card: Optional[html.HtmlElement]) -> Optional[str]:
+        """
+        Extract quote text from HTML element.
+        
+        Args:
+            card: HTML element containing quote
+            
+        Returns:
+            Quote text or None
+        """
+        if card is None:
+            return None
+        
+        # Try multiple selectors
+        selectors = [
+            './/blockquote',
+            './/div[@id="lenta-card__text-quote-full"]/p',
+            './/div[@id="lenta-card__text-quote-full"]/div',
+            './/p'
+        ]
+        
+        for selector in selectors:
+            item = handle_xpath(card, selector)
+            if item is not None:
+                text = item.text_content()
+                return self._format_quote_text(text)
+        
         return None
-
-    def get_quote_text(self, card):
+    
+    def _format_quote_text(self, text: Optional[str]) -> Optional[str]:
         """
-        Считываем текст цитаты
-        :param card: html-узел с цитатой
-        :return: string or None
+        Clean and format quote text for CSV export.
+        
+        Args:
+            text: Raw quote text
+            
+        Returns:
+            Formatted text or None
         """
-
-        item = handle_xpath(card, './/blockquote')
-        if item is None:
-            item = handle_xpath(card, './/div[@id="lenta-card__text-quote-full"]/p')
-        if item is None:
-            item = handle_xpath(card, './/div[@id="lenta-card__text-quote-full"]/div')
-        if item is None:
-            item = handle_xpath(card, './/p')
-
-        quote_text = None if item is None else self.format_quote_text(item.text_content())
-        logger.info(f"\tQuote Processed: {quote_text}")
-        return quote_text
-
-    def save_quotes(self, new_quotes):
-        file_ext = self.ac.quote_file.split('.')[-1]
-
-        if self.ac.rewrite_all:
-            if os.path.exists(self.ac.quote_file):
-                os.remove(self.ac.quote_file)
-            logger.info(f'All quotes were deleted from {self.ac.quote_file}.')
-
-        quotes_df = pd.DataFrame(columns=['Name', 'Author', 'Quote text', 'Book link', 'Quote link'])
-        if file_ext in ['csv']:
-            if os.path.exists(self.ac.quote_file):
-                quotes_df = pd.read_csv(self.ac.quote_file, sep='\t')
-        else:
-            if os.path.exists(self.ac.quote_file):
-                quotes_df = pd.read_excel(self.ac.quote_file)
-
-        for nc in new_quotes:
-            if quotes_df[quotes_df['Quote link'] == nc.link].shape[0] > 0:
-                quotes_df.loc[quotes_df['Quote link'] == nc.link, 'text'] = nc.text
+        if text is None:
+            return None
+        
+        # Clean whitespace and newlines for CSV compatibility
+        cleaned = text.replace('\t', ' ').replace('\n', ' ').strip()
+        return cleaned if cleaned else None
+    
+    def save_quotes(self, new_quotes: List[Quote]) -> None:
+        """
+        Save quotes to file (CSV or Excel).
+        
+        Args:
+            new_quotes: List of quotes to save
+        """
+        file_path = self.config.get_quotes_file_path()
+        file_ext = file_path.split('.')[-1].lower()
+        
+        # Handle rewrite mode
+        if self.config.rewrite_all:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logger.info('Cleared existing quotes file: %s', file_path)
+        
+        # Load existing quotes
+        columns = ['Name', 'Author', 'Quote text', 'Book link', 'Quote link']
+        quotes_df = pd.DataFrame(columns=columns)
+        
+        if os.path.exists(file_path):
+            try:
+                if file_ext == 'csv':
+                    quotes_df = pd.read_csv(file_path, sep='\t')
+                elif file_ext in ('xlsx', 'xls'):
+                    quotes_df = pd.read_excel(file_path)
+                logger.info('Loaded %d existing quotes from %s', len(quotes_df), file_path)
+            except Exception as e:
+                logger.warning('Could not read existing quotes file: %s. Starting fresh.', e)
+        
+        # Add new quotes
+        for quote in new_quotes:
+            existing_idx = quotes_df[quotes_df['Quote link'] == quote.link].index
+            
+            if len(existing_idx) > 0:
+                # Update existing quote
+                quotes_df.loc[existing_idx[0], 'Quote text'] = quote.text
+                logger.debug('Updated existing quote: %s', quote.link)
             else:
-                quotes_df.loc[len(quotes_df.index)] = [
-                    nc.book.name,
-                    nc.book.author,
-                    nc.text,
-                    nc.book.link,
-                    nc.link
-                ]
-
-        if file_ext in ['csv']:
-            quotes_df.to_csv(self.ac.quote_file, sep='\t')
-        else:
-            quotes_df.to_excel(self.ac.quote_file)
-
-        logger.info(f'The quotes were written to {self.ac.quote_file}.')
-
-    def format_quote_text(self, text):
-        """
-        Обработка текста цитаты (удаление табов, переходов на новую строку)
-        :param text: string or None
-        :return: string or None
-        """
-        if self.ac.quote_file.split('.')[-1] == 'csv':
-            return None if text is None else text.replace('\t', ' ').replace('\n', ' ')
-        else:
-            return text
-
+                # Add new quote
+                new_row = pd.DataFrame([{
+                    'Name': quote.book.name or '',
+                    'Author': quote.book.author or '',
+                    'Quote text': quote.text,
+                    'Book link': quote.book.link,
+                    'Quote link': quote.link
+                }])
+                quotes_df = pd.concat([quotes_df, new_row], ignore_index=True)
+                logger.debug('Added new quote: %s', quote.link)
+        
+        # Save to file
+        try:
+            if file_ext == 'csv':
+                quotes_df.to_csv(file_path, sep='\t', index=False)
+            elif file_ext in ('xlsx', 'xls'):
+                quotes_df.to_excel(file_path, index=False)
+            else:
+                # Default to CSV
+                if not file_ext:
+                    file_path += '.csv'
+                quotes_df.to_csv(file_path, sep='\t', index=False)
+            
+            logger.info('Saved %d quotes to %s', len(quotes_df), file_path)
+        except Exception as e:
+            logger.error('Failed to save quotes: %s', e)
+            raise
+    
+    def _wait_for_delay(self) -> None:
+        """Wait for configured delay between requests."""
+        import time
+        import random
+        delay = random.uniform(self.config.min_delay, self.config.max_delay)
+        time.sleep(delay)
+    
     @staticmethod
-    def try_get_quote_link(link):
+    def _validate_quote_link(link: Optional[str]) -> Optional[str]:
         """
-        Проверяет валидность ссылки на цитату
-        :param link: string - ссылка
-        :return: string or None
+        Validate quote link format.
+        
+        Args:
+            link: Raw link from HTML
+            
+        Returns:
+            Validated link or None
         """
+        if not link:
+            return None
         if "/quote/" in link:
             return link
         return None
+
+
+# Import BookLoader for link validation (circular import workaround)
+from Modules.BookLoader import BookLoader
