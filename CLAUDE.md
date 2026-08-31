@@ -124,3 +124,13 @@ Name    Author    Quote text    Book link    Quote link
 - Default min/max delay values in arguments.py are swapped (min=60, max=30) - this is a bug but not critical since the code handles this in `wait_for_delay()`
 - XPath parsing expects specific Livelib HTML structure; site changes may break scraping
 - Pandas DataFrames used for quote management; CSV for books uses custom writer
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues in pplevar/livelib-backup, managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
