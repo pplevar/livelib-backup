@@ -31,23 +31,25 @@ class BookLoader:
         self.driver = driver
         self.user_href = config.get_user_href()
     
-    def get_books(self, status: str) -> List[Book]:
+    def get_books(self, status: str, read_count: Optional[float] = None) -> List[Book]:
         """
         Fetch all books with given status.
-        
+
         Args:
             status: Book status ('read', 'reading', 'wish')
-            
+            read_count: Max number of pages to fetch for the 'read' status.
+                Ignored for other statuses.
+
         Returns:
             List of Book objects
         """
         if status not in ('read', 'reading', 'wish'):
             raise ValueError(f"Invalid status: {status}. Must be 'read', 'reading', or 'wish'")
-        
+
         books: List[Book] = []
         href = slash_add(self.user_href, status)
         page_idx = 1
-        max_pages = self.config.read_count if status == 'read' else float('inf')
+        max_pages = read_count if status == 'read' and read_count is not None else float('inf')
         
         logger.info('Fetching books with status "%s"...', status)
         

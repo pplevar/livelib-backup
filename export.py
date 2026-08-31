@@ -116,7 +116,7 @@ def main() -> int:
             
             for status in ('read', 'reading', 'wish'):
                 logger.info('Fetching books with status: %s', status)
-                books = book_loader.get_books(status)
+                books = book_loader.get_books(status, config.read_count)
                 all_books.extend(books)
                 logger.info('Found %d books with status "%s"', len(books), status)
             
@@ -143,7 +143,7 @@ def main() -> int:
         if not config.skip_quotes:
             logger.info('=== Processing Quotes ===')
             quote_loader = QuoteLoader(config, driver)
-            quotes = quote_loader.get_quotes()
+            quotes = quote_loader.get_quotes(config.quote_count)
             logger.info('Found %d quotes', len(quotes))
             
             if quotes:

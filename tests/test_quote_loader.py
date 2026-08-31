@@ -151,14 +151,13 @@ class TestFormatQuoteText:
 
 class TestGetQuotes:
     def test_get_quotes_parses_full_and_fetches_truncated(self, backup_config):
-        backup_config.quote_count = 1
         loader = QuoteLoader(backup_config)
 
         with patch(
             'Modules.QuoteLoader.download_page',
             side_effect=[QUOTE_LIST_PAGE, QUOTE_DETAIL_PAGE],
         ):
-            quotes = loader.get_quotes()
+            quotes = loader.get_quotes(1)
 
         assert len(quotes) == 2
         full_quote = next(q for q in quotes if '111111' in q.link)
@@ -183,27 +182,25 @@ class TestGetQuotes:
         assert quotes == []
 
     def test_get_quotes_keeps_truncated_text_when_detail_fetch_fails(self, backup_config):
-        backup_config.quote_count = 1
         loader = QuoteLoader(backup_config)
 
         with patch(
             'Modules.QuoteLoader.download_page',
             side_effect=[QUOTE_LIST_PAGE, None],
         ):
-            quotes = loader.get_quotes()
+            quotes = loader.get_quotes(1)
 
         truncated_quote = next(q for q in quotes if '222222' in q.link)
         assert truncated_quote.text == '!!!NOT_FULL###'
 
     def test_get_quotes_skips_quote_when_detail_fetch_raises(self, backup_config):
-        backup_config.quote_count = 1
         loader = QuoteLoader(backup_config)
 
         with patch(
             'Modules.QuoteLoader.download_page',
             side_effect=[QUOTE_LIST_PAGE, Exception('boom')],
         ):
-            quotes = loader.get_quotes()
+            quotes = loader.get_quotes(1)
 
         assert len(quotes) == 1
         assert quotes[0].text == 'Some wise words.'

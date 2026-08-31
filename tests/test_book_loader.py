@@ -114,11 +114,10 @@ class TestGetBooks:
             loader.get_books('finished')
 
     def test_get_books_parses_all_rows(self, backup_config):
-        backup_config.read_count = 1
         loader = BookLoader(backup_config)
 
         with patch('Modules.BookLoader.download_page', return_value=BOOKLIST_PAGE):
-            books = loader.get_books('read')
+            books = loader.get_books('read', 1)
 
         assert len(books) == 2
         assert all(b.date == '2024-01-01' for b in books)
@@ -140,48 +139,44 @@ class TestGetBooks:
         assert books == []
 
     def test_get_books_respects_read_count_limit(self, backup_config):
-        backup_config.read_count = 2
         loader = BookLoader(backup_config)
 
         with patch('Modules.BookLoader.download_page', return_value=BOOKLIST_PAGE) as mock_download:
-            loader.get_books('read')
+            loader.get_books('read', 2)
 
         assert mock_download.call_count == 2
 
     def test_get_books_ignores_read_count_for_other_statuses(self, backup_config):
-        backup_config.read_count = 1
         loader = BookLoader(backup_config)
 
         with patch(
             'Modules.BookLoader.download_page',
             side_effect=[BOOKLIST_PAGE, EMPTY_PAGE],
         ) as mock_download:
-            loader.get_books('wish')
+            loader.get_books('wish', 1)
 
         assert mock_download.call_count == 2
 
     def test_get_books_skips_page_on_download_failure(self, backup_config):
-        backup_config.read_count = 2
         loader = BookLoader(backup_config)
 
         with patch(
             'Modules.BookLoader.download_page',
             side_effect=[None, EMPTY_PAGE],
         ) as mock_download:
-            books = loader.get_books('read')
+            books = loader.get_books('read', 2)
 
         assert books == []
         assert mock_download.call_count == 2
 
     def test_get_books_continues_after_download_error(self, backup_config):
-        backup_config.read_count = 2
         loader = BookLoader(backup_config)
 
         with patch(
             'Modules.BookLoader.download_page',
             side_effect=[Exception('boom'), EMPTY_PAGE],
         ) as mock_download:
-            books = loader.get_books('read')
+            books = loader.get_books('read', 2)
 
         assert books == []
         assert mock_download.call_count == 2

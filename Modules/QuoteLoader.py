@@ -34,17 +34,20 @@ class QuoteLoader:
         self.driver = driver
         self.user_href = config.get_user_href()
     
-    def get_quotes(self) -> List[Quote]:
+    def get_quotes(self, quote_count: Optional[float] = None) -> List[Quote]:
         """
         Fetch all quotes from user profile.
-        
+
+        Args:
+            quote_count: Max number of quote pages to fetch.
+
         Returns:
             List of Quote objects
         """
         quotes: List[Quote] = []
         href = slash_add(self.user_href, 'quotes')
         page_idx = 1
-        max_pages = self.config.quote_count if self.config.quote_count else float('inf')
+        max_pages = quote_count if quote_count is not None else float('inf')
         
         logger.info('Fetching quotes...')
         
