@@ -154,7 +154,7 @@ class TestGetQuotes:
         loader = QuoteLoader(backup_config)
 
         with patch(
-            'Modules.QuoteLoader.download_page',
+            'Helpers.page_loader.download_page',
             side_effect=[QUOTE_LIST_PAGE, QUOTE_DETAIL_PAGE],
         ):
             quotes = loader.get_quotes(1)
@@ -168,7 +168,7 @@ class TestGetQuotes:
     def test_get_quotes_stops_on_empty_page(self, backup_config):
         loader = QuoteLoader(backup_config)
 
-        with patch('Modules.QuoteLoader.download_page', return_value=EMPTY_PAGE):
+        with patch('Helpers.page_loader.download_page', return_value=EMPTY_PAGE):
             quotes = loader.get_quotes()
 
         assert quotes == []
@@ -176,7 +176,7 @@ class TestGetQuotes:
     def test_get_quotes_stops_on_redirect_page(self, backup_config):
         loader = QuoteLoader(backup_config)
 
-        with patch('Modules.QuoteLoader.download_page', return_value=REDIRECT_PAGE):
+        with patch('Helpers.page_loader.download_page', return_value=REDIRECT_PAGE):
             quotes = loader.get_quotes()
 
         assert quotes == []
@@ -185,7 +185,7 @@ class TestGetQuotes:
         loader = QuoteLoader(backup_config)
 
         with patch(
-            'Modules.QuoteLoader.download_page',
+            'Helpers.page_loader.download_page',
             side_effect=[QUOTE_LIST_PAGE, None],
         ):
             quotes = loader.get_quotes(1)
@@ -197,7 +197,7 @@ class TestGetQuotes:
         loader = QuoteLoader(backup_config)
 
         with patch(
-            'Modules.QuoteLoader.download_page',
+            'Helpers.page_loader.download_page',
             side_effect=[QUOTE_LIST_PAGE, Exception('boom')],
         ):
             quotes = loader.get_quotes(1)

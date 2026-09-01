@@ -8,12 +8,9 @@ from lxml import html
 
 from Helpers.book import Book
 from Helpers.csv_writer import save_books as write_books
-from Helpers.livelib_parser import (
-    slash_add, href_i, is_last_page, is_redirecting_page,
-    handle_xpath, error_handler, date_parser
-)
-from Helpers.page_loader import download_page
+from Helpers.livelib_parser import slash_add, handle_xpath, error_handler, date_parser
 from Helpers.config import BackupConfig
+from Modules.Paginator import Paginator
 
 logger = logging.getLogger(__name__)
 
@@ -50,34 +47,12 @@ class BookLoader:
 
         books: List[Book] = []
         href = slash_add(self.user_href, status)
-        page_idx = 1
-        max_pages = read_count if status == 'read' and read_count is not None else float('inf')
-        
+        max_pages = read_count if status == 'read' and read_count is not None else None
+
         logger.info('Fetching books with status "%s"...', status)
-        
-        while page_idx <= max_pages:
-            self._wait_for_delay()
-            
-            try:
-                page_url = href_i(href, page_idx)
-                page_content = download_page(page_url, self.driver)
-                
-                if page_content is None:
-                    logger.warning('Failed to download page %d, skipping...', page_idx)
-                    continue
 
-                page = html.fromstring(page_content)
-
-            except Exception as e:
-                logger.error('Error processing page %d: %s', page_idx, e)
-                continue
-            finally:
-                page_idx += 1
-            
-            if is_last_page(page) or is_redirecting_page(page):
-                logger.info('Reached last page or error page at page %d', page_idx - 1)
-                break
-            
+        paginator = Paginator(self.config, self.driver)
+        for page in paginator.pages(href, max_pages):
             last_date: Optional[str] = None
             book_elements = page.xpath('.//div[@id="booklist"]/div')
             
@@ -176,10 +151,3 @@ class BookLoader:
         if "/book/" in link or "/work/" in link:
             return link
         return None
-    
-    def _wait_for_delay(self) -> None:
-        """Wait for configured delay between requests."""
-        import time
-        import random
-        delay = random.uniform(self.config.min_delay, self.config.max_delay)
-        time.sleep(delay)

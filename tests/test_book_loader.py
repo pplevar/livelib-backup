@@ -117,7 +117,7 @@ class TestGetBooks:
     def test_get_books_parses_all_rows(self, backup_config):
         loader = BookLoader(backup_config)
 
-        with patch('Modules.BookLoader.download_page', return_value=BOOKLIST_PAGE):
+        with patch('Helpers.page_loader.download_page', return_value=BOOKLIST_PAGE):
             books = loader.get_books('read', 1)
 
         assert len(books) == 2
@@ -126,7 +126,7 @@ class TestGetBooks:
     def test_get_books_stops_on_empty_page(self, backup_config):
         loader = BookLoader(backup_config)
 
-        with patch('Modules.BookLoader.download_page', return_value=EMPTY_PAGE):
+        with patch('Helpers.page_loader.download_page', return_value=EMPTY_PAGE):
             books = loader.get_books('read')
 
         assert books == []
@@ -134,7 +134,7 @@ class TestGetBooks:
     def test_get_books_stops_on_redirect_page(self, backup_config):
         loader = BookLoader(backup_config)
 
-        with patch('Modules.BookLoader.download_page', return_value=REDIRECT_PAGE):
+        with patch('Helpers.page_loader.download_page', return_value=REDIRECT_PAGE):
             books = loader.get_books('read')
 
         assert books == []
@@ -142,7 +142,7 @@ class TestGetBooks:
     def test_get_books_respects_read_count_limit(self, backup_config):
         loader = BookLoader(backup_config)
 
-        with patch('Modules.BookLoader.download_page', return_value=BOOKLIST_PAGE) as mock_download:
+        with patch('Helpers.page_loader.download_page', return_value=BOOKLIST_PAGE) as mock_download:
             loader.get_books('read', 2)
 
         assert mock_download.call_count == 2
@@ -151,7 +151,7 @@ class TestGetBooks:
         loader = BookLoader(backup_config)
 
         with patch(
-            'Modules.BookLoader.download_page',
+            'Helpers.page_loader.download_page',
             side_effect=[BOOKLIST_PAGE, EMPTY_PAGE],
         ) as mock_download:
             loader.get_books('wish', 1)
@@ -162,7 +162,7 @@ class TestGetBooks:
         loader = BookLoader(backup_config)
 
         with patch(
-            'Modules.BookLoader.download_page',
+            'Helpers.page_loader.download_page',
             side_effect=[None, EMPTY_PAGE],
         ) as mock_download:
             books = loader.get_books('read', 2)
@@ -174,7 +174,7 @@ class TestGetBooks:
         loader = BookLoader(backup_config)
 
         with patch(
-            'Modules.BookLoader.download_page',
+            'Helpers.page_loader.download_page',
             side_effect=[Exception('boom'), EMPTY_PAGE],
         ) as mock_download:
             books = loader.get_books('read', 2)

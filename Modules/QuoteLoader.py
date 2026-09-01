@@ -6,15 +6,13 @@ import os
 from typing import List, Optional
 from lxml import html
 
+from Helpers import page_loader
 from Helpers.csv_writer import save_quotes as write_quotes
-from Helpers.livelib_parser import (
-    slash_add, href_i, is_last_page, is_redirecting_page,
-    handle_xpath, error_handler
-)
-from Helpers.page_loader import download_page
+from Helpers.livelib_parser import slash_add, handle_xpath, error_handler
 from Helpers.quote import Quote
 from Helpers.book import Book
 from Helpers.config import BackupConfig
+from Modules.Paginator import Paginator
 
 logger = logging.getLogger(__name__)
 
@@ -46,47 +44,24 @@ class QuoteLoader:
         """
         quotes: List[Quote] = []
         href = slash_add(self.user_href, 'quotes')
-        page_idx = 1
-        max_pages = quote_count if quote_count is not None else float('inf')
-        
+
         logger.info('Fetching quotes...')
-        
-        while page_idx <= max_pages:
-            self._wait_for_delay()
-            
-            try:
-                page_url = href_i(href, page_idx)
-                page_content = download_page(page_url, self.driver)
-                
-                if page_content is None:
-                    logger.warning('Failed to download quotes page %d, skipping...', page_idx)
-                    continue
 
-                page = html.fromstring(page_content)
-
-            except Exception as e:
-                logger.error('Error processing quotes page %d: %s', page_idx, e)
-                continue
-            finally:
-                page_idx += 1
-            
-            if is_last_page(page) or is_redirecting_page(page):
-                logger.info('Reached last page or error page at page %d', page_idx - 1)
-                break
-            
+        paginator = Paginator(self.config, self.driver)
+        for page in paginator.pages(href, quote_count):
             quote_elements = page.xpath('.//article')
-            
+
             for quote_html in quote_elements:
                 quote = self._parse_quote(quote_html)
-                
+
                 if quote is not None and quote not in quotes:
                     # Handle truncated quotes
                     if quote.text == '!!!NOT_FULL###':
                         logger.info('Quote truncated, fetching full text...')
-                        self._wait_for_delay()
-                        
+                        paginator.wait_for_delay()
+
                         try:
-                            quote_page_content = download_page(quote.link, self.driver)
+                            quote_page_content = page_loader.download_page(quote.link, self.driver)
                             if quote_page_content:
                                 quote_page = html.fromstring(quote_page_content)
                                 full_text = self._extract_quote_text(handle_xpath(quote_page, './/article'))
@@ -95,9 +70,9 @@ class QuoteLoader:
                         except Exception as e:
                             logger.error('Error fetching full quote text: %s', e)
                             continue
-                    
+
                     quotes.append(quote)
-        
+
         logger.info('Found %d quotes', len(quotes))
         return quotes
     
@@ -217,14 +192,7 @@ class QuoteLoader:
         except Exception as e:
             logger.error('Failed to save quotes: %s', e)
             raise
-    
-    def _wait_for_delay(self) -> None:
-        """Wait for configured delay between requests."""
-        import time
-        import random
-        delay = random.uniform(self.config.min_delay, self.config.max_delay)
-        time.sleep(delay)
-    
+
     @staticmethod
     def _validate_quote_link(link: Optional[str]) -> Optional[str]:
         """
