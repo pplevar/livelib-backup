@@ -15,8 +15,6 @@ import math
 from typing import List
 
 from Helpers.config import BackupConfig
-from Helpers.csv_reader import read_books_from_csv
-from Helpers.csv_writer import save_books
 from Helpers.arguments import get_arguments
 from Modules.BookLoader import BookLoader
 from Modules.QuoteLoader import QuoteLoader
@@ -120,24 +118,11 @@ def main() -> int:
                 all_books.extend(books)
                 logger.info('Found %d books with status "%s"', len(books), status)
             
-            # Determine which books to save
-            if config.rewrite_all:
-                books_to_save = all_books
-                logger.info('Rewrite mode: all %d books will be saved', len(books_to_save))
+            # Save books (BookLoader merges new/updated books into the existing backup)
+            if all_books:
+                book_loader.save_books(all_books)
             else:
-                existing_books = read_books_from_csv(config.get_books_file_path())
-                books_to_save = get_new_items(existing_books, all_books)
-                logger.info(
-                    'Found %d new books (%d total, %d existing)',
-                    len(books_to_save), len(all_books), len(existing_books)
-                )
-            
-            # Save books
-            if books_to_save:
-                save_books(books_to_save, config.get_books_file_path())
-                logger.info('Saved %d books to %s', len(books_to_save), config.get_books_file_path())
-            else:
-                logger.info('No new books to save')
+                logger.info('No books to save')
         
         # Process quotes
         if not config.skip_quotes:

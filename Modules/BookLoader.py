@@ -2,10 +2,12 @@
 Book loader module with improved error handling and type safety.
 """
 import logging
+import os
 from typing import List, Optional
 from lxml import html
 
 from Helpers.book import Book
+from Helpers.csv_writer import save_books as write_books
 from Helpers.livelib_parser import (
     slash_add, href_i, is_last_page, is_redirecting_page,
     handle_xpath, error_handler, date_parser
@@ -93,7 +95,23 @@ class BookLoader:
         
         logger.info('Found %d books with status "%s"', len(books), status)
         return books
-    
+
+    def save_books(self, books: List[Book]) -> None:
+        """
+        Save books to file (CSV or Excel), updating existing books in place.
+
+        Args:
+            books: List of books to save
+        """
+        file_path = self.config.get_books_file_path()
+
+        if self.config.rewrite_all and os.path.exists(file_path):
+            os.remove(file_path)
+            logger.info('Cleared existing books file: %s', file_path)
+
+        write_books(books, file_path)
+        logger.info('Saved %d books to %s', len(books), file_path)
+
     def _parse_book(self, book_html: html.HtmlElement, date: Optional[str], status: str) -> Optional[Book]:
         """
         Parse a single book from HTML element.

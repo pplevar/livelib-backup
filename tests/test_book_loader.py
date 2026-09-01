@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from lxml import html
 
+from Helpers.book import Book
 from Modules.BookLoader import BookLoader
 
 
@@ -180,3 +181,47 @@ class TestGetBooks:
 
         assert books == []
         assert mock_download.call_count == 2
+
+
+class TestSaveBooks:
+    def test_save_new_books_to_csv(self, backup_config, temp_csv_file, sample_book):
+        import os
+        os.remove(temp_csv_file)
+        backup_config.books_file = temp_csv_file
+        loader = BookLoader(backup_config)
+
+        loader.save_books([sample_book])
+
+        with open(temp_csv_file, encoding='utf-8') as f:
+            content = f.read()
+        assert sample_book.link in content
+
+    def test_updating_existing_book_replaces_status(self, backup_config, temp_csv_file, sample_book):
+        import os
+        os.remove(temp_csv_file)
+        backup_config.books_file = temp_csv_file
+        loader = BookLoader(backup_config)
+
+        loader.save_books([sample_book])
+        sample_book.status = 'wish'
+        loader.save_books([sample_book])
+
+        import pandas as pd
+        df = pd.read_csv(temp_csv_file, sep='\t')
+        assert len(df) == 1
+        assert df.iloc[0]['Status'] == 'wish'
+
+    def test_rewrite_all_clears_existing_file(self, backup_config, temp_csv_file):
+        old_book = Book(link='https://www.livelib.ru/book/1', status='read', name='Old')
+        new_book = Book(link='https://www.livelib.ru/book/2', status='read', name='New')
+        backup_config.books_file = temp_csv_file
+
+        loader = BookLoader(backup_config)
+        loader.save_books([old_book])
+
+        backup_config.rewrite_all = True
+        loader.save_books([new_book])
+
+        import pandas as pd
+        df = pd.read_csv(temp_csv_file, sep='\t')
+        assert list(df['Link']) == [new_book.link]

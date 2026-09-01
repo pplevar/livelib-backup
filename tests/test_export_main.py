@@ -8,6 +8,7 @@ import pytest
 import requests
 
 import export
+from Helpers.book import Book
 
 
 def make_args(**overrides):
@@ -55,8 +56,7 @@ class TestMainHappyPath:
         with patch('export.get_arguments', return_value=make_args(driver=None)), \
              patch('requests.get', return_value=mock_response), \
              patch('export.BookLoader') as MockBookLoader, \
-             patch('export.QuoteLoader') as MockQuoteLoader, \
-             patch('export.read_books_from_csv', return_value=[]):
+             patch('export.QuoteLoader') as MockQuoteLoader:
             MockBookLoader.return_value.get_books.return_value = []
             MockQuoteLoader.return_value.get_quotes.return_value = []
             result = export.main()
@@ -76,15 +76,36 @@ class TestMainHappyPath:
         with patch('export.get_arguments', return_value=make_args()), \
              patch('requests.get', return_value=mock_response), \
              patch('export.BookLoader', return_value=mock_book_loader) as MockBookLoader, \
-             patch('export.QuoteLoader', return_value=mock_quote_loader) as MockQuoteLoader, \
-             patch('export.read_books_from_csv', return_value=[]), \
-             patch('export.save_books') as mock_save_books:
+             patch('export.QuoteLoader', return_value=mock_quote_loader) as MockQuoteLoader:
             result = export.main()
 
         assert result == 0
         assert mock_book_loader.get_books.call_count == 3  # read, reading, wish
         mock_quote_loader.get_quotes.assert_called_once()
-        mock_save_books.assert_not_called()  # no books were found
+        mock_book_loader.save_books.assert_not_called()  # no books were found
+
+    def test_saves_fetched_books(self):
+        mock_response = Mock()
+        mock_response.raise_for_status = Mock()
+
+        book = Book(link='https://www.livelib.ru/book/1', status='read', name='Book')
+
+        mock_book_loader = Mock()
+        mock_book_loader.get_books.return_value = [book]
+
+        mock_quote_loader = Mock()
+        mock_quote_loader.get_quotes.return_value = []
+
+        with patch('export.get_arguments', return_value=make_args()), \
+             patch('requests.get', return_value=mock_response), \
+             patch('export.BookLoader', return_value=mock_book_loader), \
+             patch('export.QuoteLoader', return_value=mock_quote_loader):
+            result = export.main()
+
+        assert result == 0
+        mock_book_loader.save_books.assert_called_once()
+        saved_books = mock_book_loader.save_books.call_args[0][0]
+        assert book in saved_books
 
     def test_skip_books(self):
         mock_quote_loader = Mock()
@@ -110,8 +131,7 @@ class TestMainHappyPath:
         with patch('export.get_arguments', return_value=make_args(skip='quotes')), \
              patch('requests.get', return_value=mock_response), \
              patch('export.BookLoader', return_value=mock_book_loader), \
-             patch('export.QuoteLoader') as MockQuoteLoader, \
-             patch('export.read_books_from_csv', return_value=[]):
+             patch('export.QuoteLoader') as MockQuoteLoader:
             result = export.main()
 
         assert result == 0

@@ -5,8 +5,8 @@ import logging
 import os
 from typing import List, Optional
 from lxml import html
-import pandas as pd
 
+from Helpers.csv_writer import save_quotes as write_quotes
 from Helpers.livelib_parser import (
     slash_add, href_i, is_last_page, is_redirecting_page,
     handle_xpath, error_handler
@@ -200,67 +200,20 @@ class QuoteLoader:
     
     def save_quotes(self, new_quotes: List[Quote]) -> None:
         """
-        Save quotes to file (CSV or Excel).
-        
+        Save quotes to file (CSV or Excel), updating existing quotes in place.
+
         Args:
             new_quotes: List of quotes to save
         """
         file_path = self.config.get_quotes_file_path()
-        file_ext = file_path.split('.')[-1].lower()
-        
-        # Handle rewrite mode
-        if self.config.rewrite_all:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                logger.info('Cleared existing quotes file: %s', file_path)
-        
-        # Load existing quotes
-        columns = ['Name', 'Author', 'Quote text', 'Book link', 'Quote link']
-        quotes_df = pd.DataFrame(columns=columns)
-        
-        if os.path.exists(file_path):
-            try:
-                if file_ext == 'csv':
-                    quotes_df = pd.read_csv(file_path, sep='\t')
-                elif file_ext in ('xlsx', 'xls'):
-                    quotes_df = pd.read_excel(file_path)
-                logger.info('Loaded %d existing quotes from %s', len(quotes_df), file_path)
-            except Exception as e:
-                logger.warning('Could not read existing quotes file: %s. Starting fresh.', e)
-        
-        # Add new quotes
-        for quote in new_quotes:
-            existing_idx = quotes_df[quotes_df['Quote link'] == quote.link].index
-            
-            if len(existing_idx) > 0:
-                # Update existing quote
-                quotes_df.loc[existing_idx[0], 'Quote text'] = quote.text
-                logger.debug('Updated existing quote: %s', quote.link)
-            else:
-                # Add new quote
-                new_row = pd.DataFrame([{
-                    'Name': quote.book.name or '',
-                    'Author': quote.book.author or '',
-                    'Quote text': quote.text,
-                    'Book link': quote.book.link,
-                    'Quote link': quote.link
-                }])
-                quotes_df = pd.concat([quotes_df, new_row], ignore_index=True)
-                logger.debug('Added new quote: %s', quote.link)
-        
-        # Save to file
+
+        if self.config.rewrite_all and os.path.exists(file_path):
+            os.remove(file_path)
+            logger.info('Cleared existing quotes file: %s', file_path)
+
         try:
-            if file_ext == 'csv':
-                quotes_df.to_csv(file_path, sep='\t', index=False)
-            elif file_ext in ('xlsx', 'xls'):
-                quotes_df.to_excel(file_path, index=False)
-            else:
-                # Default to CSV
-                if not file_ext:
-                    file_path += '.csv'
-                quotes_df.to_csv(file_path, sep='\t', index=False)
-            
-            logger.info('Saved %d quotes to %s', len(quotes_df), file_path)
+            write_quotes(new_quotes, file_path)
+            logger.info('Saved %d quotes to %s', len(new_quotes), file_path)
         except Exception as e:
             logger.error('Failed to save quotes: %s', e)
             raise

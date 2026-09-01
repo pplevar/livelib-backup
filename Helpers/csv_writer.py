@@ -1,27 +1,19 @@
-import os
+from Helpers.backup_store import BackupStore, BOOKS_ADAPTER, QUOTES_ADAPTER
 
 
 def save_books(books, file_path):
     """
-    Дописываем в таблицу все книги из списка
+    Сохраняет книги из списка в таблицу, обновляя уже существующие записи
     :param books: list - список книг (классов Book)
     :param file_path: string - путь к таблице
     """
-    with open(file_path, 'a', encoding='utf-8') as file:
-        if os.path.getsize(file_path) == 0:
-            file.write('Name\tAuthor\tStatus\tMy Rating\tDate\tLink\n')
-        for book in books:
-            file.write(str(book) + '\n')
+    BackupStore(BOOKS_ADAPTER).save(books, file_path)
 
 
 def save_quotes(quotes, file_path):
     """
-    Дописываем в таблицу все цитаты из списка
+    Сохраняет цитаты из списка в таблицу, обновляя уже существующие записи
     :param quotes: list - список цитат (классов Quote)
     :param file_path: string - путь к таблице
     """
-    with open(file_path, 'a', encoding='utf-8') as file:
-        if os.path.getsize(file_path) == 0:
-            file.write('Name\tAuthor\tQuote text\tBook link\tQuote link\n')
-        for quote in quotes:
-            file.write(str(quote) + '\n')
+    BackupStore(QUOTES_ADAPTER).save(quotes, file_path)
